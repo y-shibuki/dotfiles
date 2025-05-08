@@ -5,14 +5,13 @@
 #  -s (--symbolic): シンボリックリンクを作成します。
 #  -v (--verbose): リンク作成の詳細を表示します。実行中に何が行われているかを確認するために使用します。
 
-HOME_DIR="~"
-DOTFILES_DIR="$HOME_DIR/.dotfiles"
+DOTFILES_DIR="$HOME/.dotfiles"
 
 # zsh
-ls -fnsv "$DOTFILES_DIR/zsh/.zshrc" "$HOME_DIR/.zshrc"
+ln -fnsv "$DOTFILES_DIR/zsh/.zshrc" "$HOME/.zshrc"
 
 # nvim
-ls -fnsv "$DOTFILES_DIR/nvim" "$HOME_DIR/.config/nvim"
+ln -fnsv "$DOTFILES_DIR/nvim" "$HOME/.config/nvim"
 
 # tmux
-ls -fnsv "$DOTFILES_DIR/tmux/tmux.conf" "$HOME_DIR/.config/tmux/tmux.conf"
+ln -fnsv "$DOTFILES_DIR/tmux/tmux.conf" "$HOME/.config/tmux/tmux.conf"
