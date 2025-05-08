@@ -9,10 +9,10 @@ HOME_DIR="~"
 DOTFILES_DIR="$HOME_DIR/.dotfiles"
 
 # zsh
-ls -fnsv "$DOTFILES_DIR/zsh/.zshrc" "$HOME_DIR/.zshrc"
+ln -fnsv "$DOTFILES_DIR/zsh/.zshrc" "$HOME_DIR/.zshrc"
 
 # nvim
-ls -fnsv "$DOTFILES_DIR/nvim" "$HOME_DIR/.config/nvim"
+ln -fnsv "$DOTFILES_DIR/nvim" "$HOME_DIR/.config/nvim"
 
 # tmux
-ls -fnsv "$DOTFILES_DIR/tmux/tmux.conf" "$HOME_DIR/.config/tmux/tmux.conf"
+ln -fnsv "$DOTFILES_DIR/tmux/tmux.conf" "$HOME_DIR/.config/tmux/tmux.conf"
