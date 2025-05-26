@@ -15,3 +15,13 @@ ln -fnsv "$DOTFILES_DIR/nvim" "$HOME/.config/nvim"
 
 # tmux
 ln -fnsv "$DOTFILES_DIR/tmux/tmux.conf" "$HOME/.config/tmux/tmux.conf"
+
+# git
+ln -fnsv "$DOTFILES_DIR/git/.gitconfig" "$HOME/.gitconfig"
+
+echo "
+以下のコマンドで、ユーザー情報を別で管理すること
+
+$ git config --file ~/.gitconfig.local --add user.name 'Your Name'
+$ git config --file ~/.gitconfig.local --add user.email Your Email
+"

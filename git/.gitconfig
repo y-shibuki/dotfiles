@@ -1,0 +1,30 @@
+[include]
+    path = .gitconfig.local
+
+[ghq]
+    root = ~/repos
+
+[credential]
+    helper = store
+
+[init]
+    defaultBranch = main
+
+[core]
+    pager = delta
+    # git statusなどで日本語の文字化けを防ぐ
+    quotepath = false
+
+[interactive]
+    diffFilter = delta
+
+[delta]
+    navigate = true
+    line-number = true
+    side-by-side = true
+
+[alias]
+  st = status -sb
+  co = checkout
+  br = branch
+  ft = fetch
