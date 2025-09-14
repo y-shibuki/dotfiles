@@ -44,7 +44,7 @@ config.macos_window_background_blur = 20
 
 -- # Font
 config.font = wezterm.font("PlemolJP Console NF", { weight = 'Medium' })
-config.font_size = 11
+config.font_size = 13
 config.line_height = 1
 
 -- # Enable IME (For Japanese)

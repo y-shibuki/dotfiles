@@ -1,13 +1,9 @@
-local opts = { noremap = true, silent = true }
-local term_opts = { silent = true }
+local map = vim.keymap.set
 
---local keymap = vim.keymap
-local keymap = vim.api.nvim_set_keymap
-
---Remap space as leader key
-keymap("", "<Space>", "<Nop>", opts)
+-- Remap space as leader key
 vim.g.mapleader = " "
 vim.g.maplocalleader = " "
+map("", "<Space>", "<Nop>", opts)
 
 -- Modes
 --   normal_mode = 'n',
@@ -17,31 +13,40 @@ vim.g.maplocalleader = " "
 --   term_mode = 't',
 --   command_mode = 'c',
 
--- Normal --
--- Better window navigation
-keymap("n", "<C-h>", "<C-w>h", opts)
-keymap("n", "<C-j>", "<C-w>j", opts)
-keymap("n", "<C-k>", "<C-w>k", opts)
-keymap("n", "<C-l>", "<C-w>l", opts)
+-- Save and quit
+map("n", "<leader>w", "<cmd>w<cr>", { desc = "Save file" })
+map("n", "<leader>q", "<cmd>q<cr>", { desc = "Quit" })
+
+-- Window navigation
+map("n", "<C-h>", "<C-w>h", { desc = "Go to left window" })
+map("n", "<C-j>", "<C-w>j", { desc = "Go to lower window" })
+map("n", "<C-k>", "<C-w>k", { desc = "Go to upper window" })
+map("n", "<C-l>", "<C-w>l", { desc = "Go to right window" })
+
+-- Resize windows
+map("n", "<C-Up>", "<cmd>resize +2<cr>", { desc = "Increase window height" })
+map("n", "<C-Down>", "<cmd>resize -2<cr>", { desc = "Decrease window height" })
+map("n", "<C-Left>", "<cmd>vertical resize -2<cr>", { desc = "Decrease window width" })
+map("n", "<C-Right>", "<cmd>vertical resize +2<cr>", { desc = "Increase window width" })
 
 -- New tab
-keymap("n", "te", ":tabedit", opts)
+map("n", "te", ":tabedit", { desc = "New tab" })
 -- move tab
-keymap("n", "gh", "gT", opts)
-keymap("n", "gl", "gt", opts)
+map("n", "gh", "gT", { desc = "Move tab left" })
+map("n", "gl", "gt", { desc = "Move tab right" })
 
 -- Select all
-keymap("n", "<C-a>", "gg<S-v>G", opts)
+map("n", "<C-a>", "gg<S-v>G", { desc = "Select all" })
 
 -- <Space>q で強制終了
-keymap("n", "<Space>q", ":<C-u>q!<Return>", { noremap = true,  silent = true, desc = "Quit"})
+map("n", "<leader>q", ":<C-u>q!<Return>", { noremap = true, silent = true, desc = "Quit" })
 
 -- ESC*2 でハイライトやめる
-keymap("n", "<Esc><Esc>", ":<C-u>set nohlsearch<Return>", opts)
+map("n", "<Esc><Esc>", ":<C-u>set nohlsearch<Return>", { desc = "Clear highlights" })
 
 -- Insert --
 -- Press jk fast to exit insert mode
-keymap("i", "jk", "<ESC>", opts)
+map("i", "jk", "<ESC>", { desc = "Exit insert mode" })
 
 -- コンマの後に自動的にスペースを挿入
-keymap("i", ",", ",<Space>", opts)
+map("i", ",", ",<Space>", { desc = "Insert space after comma" })
