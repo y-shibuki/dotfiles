@@ -1,3 +1,5 @@
+autoload -U add-zsh-hook
+
 # Neovim update function
 function nvim-update() {
   echo "Updating Neovim..."
@@ -12,55 +14,94 @@ function nvim-update() {
   cd - > /dev/null
 }
 
-# ghq + fzf + cd
-function ghq-cd () {
-  local selected_dir=$(ghq list | fzf)
-  if [ -n "$selected_dir" ]; then
-    cd $(ghq root)/${selected_dir}
-  fi
+function auto_activate_venv() {
+    # venvディレクトリ名の候補
+    local venv_names=("venv" ".venv")
+    
+    # 現在のディレクトリから上位に向かってvenvを探す
+    local dir="$PWD"
+    while [[ "$dir" != "/" ]]; do
+        for venv_name in "${venv_names[@]}"; do
+            local venv_path="$dir/$venv_name"
+            if [[ -d "$venv_path/bin" ]]; then
+                if [[ "$VIRTUAL_ENV" != "$venv_path" ]]; then
+                    source "$venv_path/bin/activate"
+                    echo "Activated virtualenv: $venv_path"
+                fi
+                return
+            fi
+        done
+        dir="$(dirname "$dir")"
+    done
+    
+    # venvが見つからない場合、現在アクティブなvenvを無効化
+    if [[ -n "$VIRTUAL_ENV" ]]; then
+        deactivate
+        echo "Deactivated virtualenv"
+    fi
 }
 
-# ghq + fzf + code
-function ghq-code () {
-  local selected_dir=$(ghq list | fzf)
-  if [ -n "$selected_dir" ]; then
-    code $(ghq root)/${selected_dir}
-  fi
+add-zsh-hook chpwd auto_activate_venv
+auto_activate_venv
+
+function _ghq-select() {
+  ghq list | fzf --prompt="Select repository: "
 }
 
-# ghq + fzf + nvim
-function ghq-nvim () {
-  local selected_dir=$(ghq list | fzf)
-  if [ -n "$selected_dir" ]; then
-    nvim $(ghq root)/${selected_dir}
-  fi
+function ghq-cd() {
+  local selected_dir=$(_ghq-select)
+  [[ -n "$selected_dir" ]] && cd "$(ghq root)/$selected_dir"
+}
+
+function ghq-code() {
+  local selected_dir=$(_ghq-select)
+  [[ -n "$selected_dir" ]] && code "$(ghq root)/$selected_dir"
+}
+
+function ghq-nvim() {
+  local selected_dir=$(_ghq-select)
+  [[ -n "$selected_dir" ]] && nvim "$(ghq root)/$selected_dir"
 }
 
 # 新しいリポジトリを作成し、移動する
 function ghq-create-new-repository() {
-  local root=`ghq root`
-  local user=`git config --get github.user`
-  if [ -z "$user" ]; then
-    echo "you need to set github.user."
-    echo "git config --global github.user YOUR_GITHUB_USER_NAME"
+  if [[ -z "$1" ]]; then
+    echo "Usage: ghq-create-new-repository <repository-name>"
     return 1
   fi
-  local name=$1
+
+  local root=$(ghq root)
+  local user=$(git config --get github.user)
+
+  if [[ -z "$user" ]]; then
+    echo "Error: github.user not configured"
+    echo "Run: git config --global github.user YOUR_GITHUB_USER_NAME"
+    return 1
+  fi
+
+  local name="$1"
   local repo="$root/github.com/$user/$name"
-  if [ -e "$repo" ]; then
-    echo "$repo is already exists."
+  
+  if [[ -e "$repo" ]]; then
+    echo "Error: $repo already exists"
     return 1
   fi
-  git init $repo
-  cd $repo
+
+  git init "$repo" || return 1
+  cd "$repo" || return 1
   echo "# ${(C)name}" > README.md
   git add .
+  echo "Repository created at: $repo"
 }
 
 # 過去に実行したコマンドを選択
 function select-history() {
-  # 時系列を保持しつつ重複を削除
-  BUFFER=$(history -n 1 | awk '!seen[$0]++' | fzf --tac)
-  CURSOR=$#BUFFER
+  local selected
+  selected=$(fc -rl 1 | awk '{$1="";print substr($0,2)}' | awk '!seen[$0]++' | fzf --tac --prompt="History: ")
+  
+  if [[ -n "$selected" ]]; then
+    BUFFER="$selected"
+    CURSOR=$#BUFFER
+  fi
   zle clear-screen
 }
