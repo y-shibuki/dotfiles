@@ -7,16 +7,27 @@ fi
 # Initialize Starship
 eval "$(starship init zsh)"
 
-# Setup Homebrew environment
-if [[ -d "/home/linuxbrew/.linuxbrew" ]]; then
-  eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
-fi
+# Function to setup Homebrew environment
+setup_homebrew_env() {
+  if [[ -d "/home/linuxbrew/.linuxbrew" ]]; then
+    eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+  elif [[ -d "/opt/homebrew" ]]; then
+    eval "$(/opt/homebrew/bin/brew shellenv)"
+  elif [[ -d "/usr/local/Homebrew" ]]; then
+    eval "$(/usr/local/bin/brew shellenv)"
+  fi
+}
 
-# Install Homebrew
+# Setup Homebrew environment
+setup_homebrew_env
+
+# Install Homebrew if not found
 if ! command -v brew &> /dev/null; then
   echo "Installing Homebrew..."
   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-  eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+  
+  # Set up environment after installation
+  setup_homebrew_env
 fi
 
 # Install Neovim
