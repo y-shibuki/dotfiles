@@ -13,7 +13,9 @@ config.max_fps = 60
 -- config.front_end = "WebGpu"
 config.webgpu_power_preference = "HighPerformance"
 
-config.default_domain = 'WSL:Ubuntu'
+if wezterm.target_triple:find("windows") then
+  config.default_domain = 'WSL:Ubuntu'
+end
 
 -- # Appearance
 -- ## Cursor
@@ -39,13 +41,13 @@ config.window_padding = {
 
 -- ## Color
 config.color_scheme = 'Catppuccin Mocha'
-config.window_background_opacity = 0.85
-config.macos_window_background_blur = 20
+config.window_background_opacity = 0.90
+config.macos_window_background_blur = 30
 
 -- # Font
 config.font = wezterm.font("PlemolJP Console NF", { weight = 'Medium' })
 config.font_size = 13
-config.line_height = 1
+config.line_height = 1.3
 
 -- # Enable IME (For Japanese)
 config.use_ime = true
@@ -66,14 +68,6 @@ local mod = {}
 mod.SUPER = "ALT"
 mod.SUPER_REV = "ALT|CTRL"
 config.keys = {
-  {
-    key = 't',
-    mods = 'CTRL',
-    action = act.SpawnCommandInNewTab {
-      domain = { DomainName = 'WSL:Ubuntu' },
-      cwd = '~/work'
-    },
-  },
     -- Copy/Paste --
   { key = "c", mods = "CTRL|SHIFT", action = act.CopyTo("Clipboard") },
   { key = "v", mods = "CTRL|SHIFT", action = act.PasteFrom("Clipboard") },
