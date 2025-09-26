@@ -105,3 +105,37 @@ function select-history() {
   fi
   zle clear-screen
 }
+
+# tmuxのWindow名を更新
+function update_tmux_window_name() {
+  if [ -z "$TMUX" ]; then
+    return
+  fi
+
+  local window_name=""
+
+  # SSH接続の場合
+  if [ -n "$SSH_CONNECTION" ] || [ -n "$SSH_CLIENT" ]; then
+    local hostname=$(hostname -s)  # ホスト名も含める場合
+    local current_dir=$(basename "$PWD")
+    window_name="ssh:${hostname}:${current_dir}"
+  else
+    # Gitリポジトリかどうかチェック
+    local git_root=$(git rev-parse --show-toplevel 2>/dev/null)
+
+    if [ -n "$git_root" ]; then
+        window_name=$(basename "$git_root")
+    else
+        window_name=$(basename "$PWD")
+    fi
+  fi
+
+  # 30文字制限
+  if [ ${#window_name} -gt 30 ]; then
+      window_name="${window_name:0:27}..."
+  fi
+
+  tmux rename-window "$window_name"
+}
+
+add-zsh-hook chpwd update_tmux_window_name
