@@ -23,6 +23,12 @@ ln -fnsv "$DOTFILES_DIR/tmux/tmux.conf" "$HOME/.config/tmux/tmux.conf"
 # git
 ln -fnsv "$DOTFILES_DIR/git/.gitconfig" "$HOME/.gitconfig"
 
+# claude
+ln -fnsv "$DOTFILES_DIR/claude/CLAUDE.md" "$HOME/.config/claude/CLAUDE.md"
+ln -fnsv "$DOTFILES_DIR/claude/settings.json" "$HOME/.config/claude/settings.json"
+ln -fnsv "$DOTFILES_DIR/claude/commands" "$HOME/.config/claude/commands"
+ln -fnsv "$DOTFILES_DIR/claude/statusline.sh" "$HOME/.config/claude/statusline.sh"
+
 echo "
 [setup.sh] 以下のコマンドで、ユーザー情報を別で管理すること
 
