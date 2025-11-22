@@ -11,3 +11,6 @@ alias ls-tree='ls --tree'
 
 alias cat='bat --color=always --paging=never'
 alias less='bat --color=always --paging=always'
+
+# VSCode WSL alias
+alias code='code --remote wsl+Ubuntu'
