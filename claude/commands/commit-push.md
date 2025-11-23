@@ -4,13 +4,19 @@
 
 ## 手順
 
-1. 変更内容の確認 (`git status`, `git diff`)
+1. 変更内容の確認
+   - `git status` でファイル一覧を確認
+   - `git diff` で未ステージの変更を確認
 2. 今回の作業に関連するファイルのみを選択的にステージング
    - `git add [specific-files]` を使用
    - **`git add .` や `git add -A` は使用しない**
-3. ステージングした内容の確認 (`git diff --cached`)
-4. 最近のコミットメッセージを確認 (`git log --oneline -5`)
+3. ステージングした内容の確認
+   - `git diff --cached` でステージング済みの変更を確認
+4. 最近のコミットメッセージを確認
+   - **必ず `git log --oneline -5 --no-color` を使用**
+   - `--no-color` オプションを必ず指定してANSIカラーコードを除外
 5. Conventional Commitsに従ったコミットメッセージを作成
+   - **ANSIカラーコードが含まれていないことを確認**
 6. コミット実行
 7. リモートリポジトリへプッシュ
 
