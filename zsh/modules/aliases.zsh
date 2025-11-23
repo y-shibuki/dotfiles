@@ -9,8 +9,5 @@ alias ls="eza --color=always --icons --group-directories-first"
 alias ll='ls -alF'
 alias ls-tree='ls --tree'
 
-alias cat='bat --color=always --paging=never'
-alias less='bat --color=always --paging=always'
-
 # VSCode WSL alias
 alias code='code --remote wsl+Ubuntu'
