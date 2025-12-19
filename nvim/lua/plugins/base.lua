@@ -26,6 +26,13 @@ return {
     },
   },
   {
+    'echasnovski/mini.icons',
+    version = false,
+    opts = {
+      style = 'glyph',
+    },
+  },
+  {
     "catppuccin/nvim",
     name = "catppuccin",
     lazy = false,
@@ -38,19 +45,12 @@ return {
           dark = "mocha",
         },
         transparent_background = true,
-        show_end_of_buffer = false,
-        term_colors = false,
-        dim_inactive = {
-          enabled = false,
-          shade = "dark",
-          percentage = 0.15,
-        },
-        no_italic = false,
+        no_italic = true,
         no_bold = false,
         no_underline = false,
         styles = {
-          comments = { "italic" },
-          conditionals = { "italic" },
+          comments = {},
+          conditionals = {},
           loops = {},
           functions = {},
           keywords = {},
@@ -62,11 +62,14 @@ return {
           types = {},
           operators = {},
         },
-        color_overrides = {},
-        custom_highlights = {},
         integrations = {
+          alpha = true,
           blink_cmp = true,
           gitsigns = true,
+          mini = {
+            enabled = true,
+            indentscope_color = "",
+          },
           nvimtree = true,
           treesitter = true,
           fzf = true,
