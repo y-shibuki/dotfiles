@@ -15,7 +15,6 @@ map("", "<Space>", "<Nop>", opts)
 
 -- Save and quit
 map("n", "<leader>w", "<cmd>w<cr>", { desc = "Save file" })
-map("n", "<leader>q", "<cmd>q<cr>", { desc = "Quit" })
 
 -- Window navigation
 map("n", "<C-h>", "<C-w>h", { desc = "Go to left window" })
@@ -28,12 +27,6 @@ map("n", "<C-Up>", "<cmd>resize +2<cr>", { desc = "Increase window height" })
 map("n", "<C-Down>", "<cmd>resize -2<cr>", { desc = "Decrease window height" })
 map("n", "<C-Left>", "<cmd>vertical resize -2<cr>", { desc = "Decrease window width" })
 map("n", "<C-Right>", "<cmd>vertical resize +2<cr>", { desc = "Increase window width" })
-
--- New tab
-map("n", "te", ":tabedit", { desc = "New tab" })
--- move tab
-map("n", "gh", "gT", { desc = "Move tab left" })
-map("n", "gl", "gt", { desc = "Move tab right" })
 
 -- Select all
 map("n", "<C-a>", "gg<S-v>G", { desc = "Select all" })
