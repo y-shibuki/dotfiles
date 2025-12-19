@@ -1,17 +1,21 @@
 return {
   "ibhagwan/fzf-lua",
-  cmd = "FzfLua",
-  dependencies = { "nvim-tree/nvim-web-devicons" },
+  ---@module "fzf-lua"
+  ---@type fzf-lua.Config|{}
+  ---@diagnostics disable: missing-fields
+  dependencies = { "nvim-mini/mini.icons" },
   config = function()
     local fzf_lua = require("fzf-lua")
 
     fzf_lua.setup({
-      "default-title",
-      fzf_opts = {
-        ["--no-scrollbar"] = true,
-      },
       defaults = {
         formatter = "path.filename_first",
+      },
+      hls = {
+        normal = "Normal",
+        border = "Normal",
+        preview_normal = "Normal",
+        preview_border = "Normal",
       },
       previewers = {
         builtin = {
@@ -19,7 +23,6 @@ return {
           syntax_delay = 0,
           syntax_limit_l = 0,
           syntax_limit_b = 1024 * 1024,
-          treesitter = { enable = true, disable = {} },
           extensions = {
             ["png"] = { "viu", "-b" },
             ["jpg"] = { "viu", "-b" },
@@ -64,4 +67,5 @@ return {
     vim.keymap.set("n", "<leader>fW", fzf_lua.grep_cWORD, { desc = "󰈞 Grep WORD" })
     vim.keymap.set("v", "<leader>fw", fzf_lua.grep_visual, { desc = "󰈞 Grep Selection" })
   end,
+  ---@diagnostics enable: missing-fields
 }
