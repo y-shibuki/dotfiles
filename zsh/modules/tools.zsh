@@ -60,7 +60,3 @@ export FZF_DEFAULT_OPTS="\
 --color=marker:#B4BEFE,fg+:#CDD6F4,prompt:#CBA6F7,hl+:#F38BA8 \
 --color=border:#6C7086,label:#CDD6F4"
 
-# Zsh Syntax Highlighting
-if [[ ! -d ~/.local/share/zsh/plugins/zsh-syntax-highlighting ]]; then
-  git clone https://github.com/zsh-users/zsh-syntax-highlighting.git ~/.local/share/zsh/plugins/zsh-syntax-highlighting
-fi
