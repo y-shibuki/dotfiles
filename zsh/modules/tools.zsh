@@ -50,6 +50,7 @@ if [ -d "$FNM_PATH" ]; then
 fi
 
 # FZF Config
+source <(fzf --zsh)
 export FZF_DEFAULT_OPTS="\
 --exact \
 --tmux 80% \
