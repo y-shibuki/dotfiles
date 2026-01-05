@@ -6,10 +6,8 @@ if [[ -r "$HOME/.zshrc.local" ]]; then
     source "$HOME/.zshrc.local"
 fi
 
-# Zsh Syntax Highlighting
-if [[ -f ~/.local/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh ]]; then
-  source ~/.local/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
-fi
+source $(brew --prefix)/share/zsh-autosuggestions/zsh-autosuggestions.zsh
+source $(brew --prefix)/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
 
 if command -v tmux &> /dev/null && [[ -z "$TMUX" && -z "$VIM" && "$TERM_PROGRAM" != "vscode" && $- == *l* ]] ; then
   tmux attach-session -t default || tmux new-session -s default
