@@ -27,6 +27,7 @@ ln -fnsv "$DOTFILES_DIR/git/.gitconfig" "$HOME/.gitconfig"
 ln -fnsv "$DOTFILES_DIR/claude/CLAUDE.md" "$HOME/.config/claude/CLAUDE.md"
 ln -fnsv "$DOTFILES_DIR/claude/settings.json" "$HOME/.config/claude/settings.json"
 ln -fnsv "$DOTFILES_DIR/claude/commands" "$HOME/.config/claude/commands"
+ln -fnsv "$DOTFILES_DIR/claude/docs" "$HOME/.config/claude/docs"
 ln -fnsv "$DOTFILES_DIR/claude/statusline.sh" "$HOME/.config/claude/statusline.sh"
 
 echo "
