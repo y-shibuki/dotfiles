@@ -67,12 +67,29 @@ ln -fnsv "$DOTFILES_DIR/tmux/tmux.conf" "$HOME/.config/tmux/tmux.conf"
 # git
 ln -fnsv "$DOTFILES_DIR/git/.gitconfig" "$HOME/.gitconfig"
 
+# ruff
+mkdir -p "$HOME/.config/ruff"
+ln -fnsv "$DOTFILES_DIR/ruff/ruff.toml" "$HOME/.config/ruff/ruff.toml"
+
 # claude
 ln -fnsv "$DOTFILES_DIR/claude/CLAUDE.md" "$HOME/.config/claude/CLAUDE.md"
 ln -fnsv "$DOTFILES_DIR/claude/settings.json" "$HOME/.config/claude/settings.json"
 ln -fnsv "$DOTFILES_DIR/claude/commands" "$HOME/.config/claude/commands"
 ln -fnsv "$DOTFILES_DIR/claude/docs" "$HOME/.config/claude/docs"
 ln -fnsv "$DOTFILES_DIR/claude/statusline.sh" "$HOME/.config/claude/statusline.sh"
+
+# vscode
+if command -v code &> /dev/null; then
+  echo "[setup] Installing VSCode extensions..."
+  while IFS= read -r ext || [[ -n "$ext" ]]; do
+    [[ -z "$ext" || "$ext" == \#* ]] && continue
+    code --install-extension "$ext" --force
+  done < "$DOTFILES_DIR/vscode/extensions.txt"
+
+  VSCODE_USER_DIR="$HOME/Library/Application Support/Code/User"
+  mkdir -p "$VSCODE_USER_DIR"
+  ln -fnsv "$DOTFILES_DIR/vscode/settings.json" "$VSCODE_USER_DIR/settings.json"
+fi
 
 echo "
 [setup] 以下のコマンドで、ユーザー情報を別で管理すること
