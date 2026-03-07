@@ -139,3 +139,13 @@ function update_tmux_window_name() {
 }
 
 add-zsh-hook chpwd update_tmux_window_name
+
+function reload() {
+  source ~/.zshrc
+  if [[ -n "$TMUX" ]]; then
+    tmux source ~/.config/tmux/tmux.conf
+    echo "zsh + tmux reloaded"
+  else
+    echo "zsh reloaded"
+  fi
+}
