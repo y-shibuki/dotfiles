@@ -30,7 +30,12 @@ fi
 
 # --- Packages ---
 echo "[setup] Installing packages via Brewfile..."
-brew bundle --file="$DOTFILES_DIR/Brewfile"
+brew bundle --no-upgrade --file="$DOTFILES_DIR/Brewfile"
+
+# --- uv ---
+echo "[setup] Installing Python and tools via uv..."
+uv python install
+uv tool install ruff
 
 # --- zsh ---
 if [[ "$SHELL" != */zsh ]]; then

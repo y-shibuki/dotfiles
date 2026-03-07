@@ -2,6 +2,9 @@
 export EDITOR="nvim"
 export VISUAL="$EDITOR"
 
+# uv tools
+export PATH="$HOME/.local/bin:$PATH"
+
 # 履歴設定
 HISTFILE=$HOME/.zsh_history
 HISTORY_IGNORE="(cd|pwd|l[sal]|man|rm|code|nvim)"
