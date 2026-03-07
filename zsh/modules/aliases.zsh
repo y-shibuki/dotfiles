@@ -9,5 +9,7 @@ alias ls="eza --color=always --icons --group-directories-first"
 alias ll='ls -alF'
 alias ls-tree='ls --tree'
 
-# VSCode WSL alias
-alias code='code --remote wsl+Ubuntu'
+# VSCode WSL alias (Linux only)
+if [[ "$(uname)" == "Linux" ]]; then
+  alias code='code --remote wsl+Ubuntu'
+fi
