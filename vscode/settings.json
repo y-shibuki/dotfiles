@@ -1,0 +1,22 @@
+{
+  "workbench.iconTheme": "catppuccin-mocha",
+  "workbench.startupEditor": "none",
+  "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
+  "[python]": {
+    "editor.defaultFormatter": "charliermarsh.ruff"
+  },
+  "autoDocstring.docstringFormat": "google",
+  "git.autofetch": true,
+  "git.enableSmartCommit": true,
+  "editor.fontFamily": "'PlemolJP Console NF', Consolas, 'Courier New', monospace",
+  "catppuccin.italicKeywords": false,
+  "catppuccin.italicComments": false,
+  "diffEditor.ignoreTrimWhitespace": true,
+  "git.replaceTagsWhenPull": true,
+  "files.watcherExclude": {
+    "**/.ruff_cache/**": true
+  },
+  "github.copilot.nextEditSuggestions.enabled": true,
+  "workbench.colorTheme": "Catppuccin Mocha",
+  "claudeCode.preferredLocation": "panel"
+}
