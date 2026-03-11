@@ -26,6 +26,3 @@ setopt hist_verify
 setopt inc_append_history_time
 
 setopt no_beep
-
-# bat
-export BAT_THEME="Dracula"
