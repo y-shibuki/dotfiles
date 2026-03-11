@@ -15,6 +15,52 @@ return {
             ["l"] = "open",
           }
         },
+        filesystem = {
+          filtered_items = {
+            visible = true, -- 隠しファイルを表示
+            hide_dotfiles = false, 
+            show_hidden_count = true, 
+            hide_gitignored = false, 
+            hide_by_name = {
+              "dist", 
+              "build", 
+              -- Python
+              "__pycache__",
+              ".pytest_cache",
+              ".mypy_cache",
+              ".ruff_cache",
+              ".venv",
+              "venv",
+              -- TypeScript/JavaScript
+              "node_modules",
+              ".next",
+              ".nuxt",
+              ".turbo",
+              ".vercel",
+              -- Java
+              "target",
+              ".gradle",
+              ".mvn",
+              "out",
+            },
+            hide_by_pattern = {
+              -- Python
+              "*.pyc",
+              "*.pyo",
+              "*.pyd",
+              -- Java
+              "*.class",
+              -- TypeScript
+              "*.js.map",
+              "*.d.ts.map",
+            },
+            -- H キー押下でも表示されないファイル/フォルダ  
+            never_show = {
+              -- ".git", 
+              ".DS_Store"
+            }
+          },
+        },
         source_selector = {
           statusline = true
         },
