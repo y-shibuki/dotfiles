@@ -149,3 +149,28 @@ function reload() {
     echo "zsh reloaded"
   fi
 }
+
+gtidy() {
+  # pull してから掃除
+  git pull -p || return 1  # pullが失敗したら中断
+
+  local branches
+  branches=$(git branch --merged | grep -v -E '^\*|main|master|develop')
+
+  if [[ -z "$branches" ]]; then
+    echo "削除対象のブランチはありません"
+    return 0
+  fi
+
+  echo "以下のブランチを削除します："
+  echo "$branches"
+  echo ""
+
+  read "answer?実行しますか？ [y/N]: "
+  if [[ "$answer" =~ ^[Yy]$ ]]; then
+    echo "$branches" | xargs git branch -d
+    echo "削除しました"
+  else
+    echo "キャンセルしました"
+  fi
+}
