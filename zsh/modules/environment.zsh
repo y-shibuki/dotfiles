@@ -2,8 +2,25 @@
 export EDITOR="nvim"
 export VISUAL="$EDITOR"
 
-# uv tools
-export PATH="$HOME/.local/bin:$PATH"
+# PATH管理（typeset -U で重複防止）
+typeset -U path PATH
+
+path=(
+  "$HOME/.local/bin"
+  "$HOME/bin"
+  "/home/linuxbrew/.linuxbrew/bin"
+  "/home/linuxbrew/.linuxbrew/sbin"
+  "/opt/homebrew/bin"
+  "/opt/homebrew/sbin"
+  "/usr/local/bin"
+  "/usr/local/sbin"
+  "/usr/bin"
+  "/usr/sbin"
+  "/bin"
+  "/sbin"
+  "/snap/bin"
+  $path
+)
 
 # 履歴設定
 HISTFILE=$HOME/.zsh_history
