@@ -8,7 +8,7 @@ fi
 eval "$(starship init zsh)"
 
 # Function to setup Homebrew environment
-setup_homebrew_env() {
+_setup_homebrew_env() {
   if [[ -d "/home/linuxbrew/.linuxbrew" ]]; then
     eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
   elif [[ -d "/opt/homebrew" ]]; then
@@ -19,7 +19,7 @@ setup_homebrew_env() {
 }
 
 # Setup Homebrew environment
-setup_homebrew_env
+_setup_homebrew_env
 
 # nvm (Node.js version manager)
 export NVM_DIR="$HOME/.nvm"
