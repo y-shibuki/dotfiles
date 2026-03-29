@@ -77,6 +77,7 @@ ln -fnsv "$DOTFILES_DIR/claude/settings.json" "$HOME/.config/claude/settings.jso
 ln -fnsv "$DOTFILES_DIR/claude/commands" "$HOME/.config/claude/commands"
 ln -fnsv "$DOTFILES_DIR/claude/docs" "$HOME/.config/claude/docs"
 ln -fnsv "$DOTFILES_DIR/claude/statusline.sh" "$HOME/.config/claude/statusline.sh"
+ln -fnsv "$DOTFILES_DIR/claude/skills" "$HOME/.config/claude/skills"
 
 # vscode
 if command -v code &> /dev/null; then
