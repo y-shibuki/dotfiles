@@ -157,6 +157,7 @@ function reload() {
 
 function gtidy() {
   git pull -p || return 1
+  git fetch --prune origin "+refs/tags/*:refs/tags/*"
 
   local branches
   branches=$(git branch --merged | grep -v -E '^\*|main|master|develop')
