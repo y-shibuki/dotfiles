@@ -1,9 +1,3 @@
-# Starship prompt
-if ! command -v starship &> /dev/null; then
-  echo "Installing Starship..."
-  curl -sS https://starship.rs/install.sh | sh
-fi
-
 # Initialize Starship
 eval "$(starship init zsh)"
 
@@ -56,7 +50,8 @@ _fzf_comprun() {
 # Catppuccin Mocha テーマを bat にインストール
 if [[ ! -f "$(bat --config-dir)/themes/Catppuccin Mocha.tmTheme" ]]; then
   mkdir -p "$(bat --config-dir)/themes"
-  wget -P "$(bat --config-dir)/themes" https://github.com/catppuccin/bat/raw/main/themes/Catppuccin%20Mocha.tmTheme
+  curl -o "$(bat --config-dir)/themes/Catppuccin Mocha.tmTheme" \
+    "https://github.com/catppuccin/bat/raw/main/themes/Catppuccin%20Mocha.tmTheme"
   bat cache --build
 fi
 export BAT_THEME="Catppuccin Mocha"
