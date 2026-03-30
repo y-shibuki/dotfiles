@@ -1,6 +1,7 @@
 # 基本環境設定
 export EDITOR="nvim"
 export VISUAL="$EDITOR"
+export CLAUDE_CONFIG_DIR=$HOME/.config/claude
 
 # PATH管理（typeset -U で重複防止）
 typeset -U path PATH
@@ -8,8 +9,6 @@ typeset -U path PATH
 path=(
   "$HOME/.local/bin"
   "$HOME/bin"
-  "/home/linuxbrew/.linuxbrew/bin"
-  "/home/linuxbrew/.linuxbrew/sbin"
   "/opt/homebrew/bin"
   "/opt/homebrew/sbin"
   "/usr/local/bin"
@@ -18,7 +17,6 @@ path=(
   "/usr/sbin"
   "/bin"
   "/sbin"
-  "/snap/bin"
   $path
 )
 
@@ -31,9 +29,8 @@ SAVEHIST=10000
 setopt extended_history
 setopt hist_allow_clobber
 setopt hist_fcntl_lock
-setopt hist_find_no_dups 
+setopt hist_find_no_dups
 setopt hist_ignore_all_dups
-setopt hist_ignore_dups
 setopt hist_ignore_space
 setopt hist_no_functions
 setopt hist_no_store

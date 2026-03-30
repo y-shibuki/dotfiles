@@ -10,7 +10,7 @@ set -e
 DOTFILES_DIR="$HOME/.dotfiles"
 
 # --- Homebrew ---
-_setup_brew_env() {
+_setup_homebrew_env() {
   if [[ -d "/home/linuxbrew/.linuxbrew" ]]; then
     eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
   elif [[ -d "/opt/homebrew" ]]; then
@@ -20,17 +20,23 @@ _setup_brew_env() {
   fi
 }
 
-_setup_brew_env
+_setup_homebrew_env
 
 if ! command -v brew &> /dev/null; then
   echo "[setup] Installing Homebrew..."
   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-  _setup_brew_env
+  _setup_homebrew_env
 fi
 
 # --- Packages ---
 echo "[setup] Installing packages via Brewfile..."
 brew bundle --no-upgrade --file="$DOTFILES_DIR/Brewfile"
+
+# --- Starship ---
+if ! command -v starship &> /dev/null; then
+  echo "[setup] Installing Starship..."
+  curl -sS https://starship.rs/install.sh | sh
+fi
 
 # --- uv ---
 echo "[setup] Installing Python and tools via uv..."
@@ -88,7 +94,11 @@ if command -v code &> /dev/null; then
     code --install-extension "$ext" --force
   done < "$DOTFILES_DIR/vscode/extensions.txt"
 
-  VSCODE_USER_DIR="$HOME/Library/Application Support/Code/User"
+  if [[ "$OSTYPE" == "darwin"* ]]; then
+    VSCODE_USER_DIR="$HOME/Library/Application Support/Code/User"
+  else
+    VSCODE_USER_DIR="$HOME/.config/Code/User"
+  fi
   mkdir -p "$VSCODE_USER_DIR"
   ln -fnsv "$DOTFILES_DIR/vscode/settings.json" "$VSCODE_USER_DIR/settings.json"
 fi

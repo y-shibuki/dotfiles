@@ -1,20 +1,5 @@
 autoload -U add-zsh-hook
 
-# --- neovim ---
-
-function nvim-update() {
-  echo "Updating Neovim..."
-  cd /tmp
-  curl -LO https://github.com/neovim/neovim/releases/latest/download/nvim-linux-x86_64.tar.gz
-  tar xzvf nvim-linux-x86_64.tar.gz
-  sudo rm -rf /opt/nvim
-  sudo mv nvim-linux-x86_64 /opt/nvim
-  sudo ln -sf /opt/nvim/bin/nvim /usr/local/bin/nvim
-  echo "Neovim updated successfully!"
-  nvim --version
-  cd - > /dev/null
-}
-
 # --- python venv ---
 
 function _auto_activate_venv() {
@@ -107,6 +92,9 @@ function select-history() {
   fi
   zle clear-screen
 }
+
+zle -N select-history
+bindkey '^r' select-history
 
 # --- tmux ---
 
