@@ -1,6 +1,7 @@
 #!/bin/bash
 input=$(cat)
 
+ACCOUNT_EMAIL=$(jq -r '.oauthAccount.emailAddress // "unknown"' "$HOME/.claude.json" 2>/dev/null)
 MODEL_DISPLAY=$(echo "$input" | jq -r '.model.display_name // "unknown"')
 CURRENT_DIR=$(echo "$input" | jq -r '.workspace.current_dir // .cwd // empty')
 CURRENT_DIR=${CURRENT_DIR/#$HOME/\~}
@@ -31,5 +32,5 @@ fi
 DIM="\033[2m"
 RESET="\033[0m"
 
-printf "${DIM}[%s] Thinking:%s Dir:%s Usage:session=%s,week=%s${RESET}\n" \
-  "$MODEL_DISPLAY" "$THINKING" "$CURRENT_DIR" "$SESSION_USAGE" "$WEEK_USAGE"
+printf "${DIM}[%s] %s Thinking:%s Dir:%s Usage:session=%s,week=%s${RESET}\n" \
+  "$MODEL_DISPLAY" "$ACCOUNT_EMAIL" "$THINKING" "$CURRENT_DIR" "$SESSION_USAGE" "$WEEK_USAGE"
