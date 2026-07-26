@@ -68,8 +68,6 @@ opt.backup = false
 opt.writebackup = false
 -- スワップファイルを作成しない
 opt.swapfile = false
--- 自動保存の設定
-opt.updatetime = 300
 -- タイムアウト時間の設定
 opt.timeoutlen = 500
 
@@ -91,7 +89,7 @@ opt.pumheight = 10
 opt.completeopt = 'menu,menuone,noselect'
 
 -- ========== パフォーマンス設定 ==========
--- 描画の更新頻度を上げる
+-- 描画の更新頻度を上げる（CursorHoldイベントの間隔も短くなり、LSPやdiagnosticsの応答性も向上する）
 opt.updatetime = 50
 -- 構文ハイライトの同期を取る行数を制限（大きなファイルでのパフォーマンス向上）
 opt.synmaxcol = 300
@@ -136,9 +134,6 @@ opt.foldlevelstart = 99
 -- 「※」等の記号を打つと、半角文字と重なる問題がある。「※」などを全角文字の幅で表示するために設定する
 -- ただし、neotreeの表示が崩れるのでコメントアウト
 -- opt.ambiwidth = 'double'
-
--- CursorHold イベントの発生間隔を短くする（LSP や diagnostics の応答性向上）
-vim.opt.updatetime = 300
 
 -- 行の結合時にスペースを自動挿入しない場合がある問題を回避
 opt.joinspaces = false
