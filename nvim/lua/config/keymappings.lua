@@ -43,3 +43,34 @@ map("i", "jk", "<ESC>", { desc = "Exit insert mode" })
 
 -- コンマの後に自動的にスペースを挿入
 map("i", ",", ",<Space>", { desc = "Insert space after comma" })
+
+-- rg等を生コマンドで打ちたい時用にターミナルを下分割で開く
+-- 結果内は <C-\><C-n> でノーマルモードに入れば / 検索・yank が可能
+-- file:line 形式の行は gF でジャンプできる（Vim組み込み機能）
+map("n", "<leader>rg", "<cmd>botright split | terminal<cr>i", { desc = "Open terminal (for rg etc.)" })
+
+-- 選択範囲を z レジスタ経由で取得する（unnamed/システムクリップボードを汚さない）
+local function get_visual_selection()
+  local reg_save = vim.fn.getreg("z")
+  local regtype_save = vim.fn.getregtype("z")
+  vim.cmd('noautocmd normal! gv"zy')
+  local text = vim.fn.getreg("z")
+  vim.fn.setreg("z", reg_save, regtype_save)
+  return text:gsub("\n", " "):gsub("^%s+", ""):gsub("%s+$", "")
+end
+
+-- シェルのシングルクォート内で安全に展開できるようにエスケープする
+local function shellescape_single(text)
+  return "'" .. text:gsub("'", "'\\''") .. "'"
+end
+
+-- visual選択したテキストで rg を打ち込んだ状態でターミナルを開く（実行はせず続けてフラグを追加できる）
+map("v", "<leader>rg", function()
+  local text = get_visual_selection()
+  if text == "" then
+    return
+  end
+  vim.cmd("botright split | terminal")
+  vim.cmd("startinsert")
+  vim.fn.chansend(vim.b.terminal_job_id, "rg -i " .. shellescape_single(text) .. " ")
+end, { desc = "Open terminal with rg prefilled from selection" })
