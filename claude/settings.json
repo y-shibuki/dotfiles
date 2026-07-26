@@ -97,6 +97,18 @@
     "command": "bash ~/.config/claude/statusline.sh",
     "padding": 0
   },
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -n \"$TMUX_PANE\" ] && tty=$(tmux display-message -p -t \"$TMUX_PANE\" '#{pane_tty}' 2>/dev/null) && printf '\\a' > \"$tty\"; true"
+          }
+        ]
+      }
+    ]
+  },
   "enabledPlugins": {
     "github@claude-plugins-official": true,
     "skill-creator@claude-plugins-official": true
