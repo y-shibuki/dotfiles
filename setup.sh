@@ -122,6 +122,12 @@ ln -fnsv "$DOTFILES_DIR/tmux/tmux.conf" "$HOME/.config/tmux/tmux.conf"
 # git
 ln -fnsv "$DOTFILES_DIR/git/.gitconfig" "$HOME/.gitconfig"
 
+# github.com の認証は gh に委譲する（CodeCommit 等の credential.helper=store はそのまま維持される）
+if command -v gh &> /dev/null && gh auth status &> /dev/null; then
+  echo "[setup] Configuring git credential helper for github.com via gh..."
+  gh auth setup-git
+fi
+
 # ruff
 mkdir -p "$HOME/.config/ruff"
 ln -fnsv "$DOTFILES_DIR/ruff/ruff.toml" "$HOME/.config/ruff/ruff.toml"
