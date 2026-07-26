@@ -2,6 +2,7 @@
 export EDITOR="nvim"
 export VISUAL="$EDITOR"
 export CLAUDE_CONFIG_DIR=$HOME/.config/claude
+export SECOND_BRAIN_VAULT="$HOME/repos/github.com/y-shibuki/second-brain"
 
 # PATH管理（typeset -U で重複防止）
 typeset -U path PATH
