@@ -1,6 +1,9 @@
 # Initialize Starship
 eval "$(starship init zsh)"
 
+# Initialize zoxide (smarter cd)
+eval "$(zoxide init zsh)"
+
 # Function to setup Homebrew environment
 _setup_homebrew_env() {
   if [[ -d "/home/linuxbrew/.linuxbrew" ]]; then
@@ -21,6 +24,9 @@ export NVM_DIR="$HOME/.nvm"
 
 # FZF Config
 source <(fzf --zsh)
+export FZF_DEFAULT_COMMAND="fd --type f --hidden --exclude .git"
+export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
+export FZF_ALT_C_COMMAND="fd --type d --hidden --exclude .git"
 export FZF_DEFAULT_OPTS="\
 --exact \
 --tmux 80% \
