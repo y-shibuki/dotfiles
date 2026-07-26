@@ -74,9 +74,10 @@ ln -fnsv "$DOTFILES_DIR/tmux/tmux.conf" "$HOME/.config/tmux/tmux.conf"
 ln -fnsv "$DOTFILES_DIR/git/.gitconfig" "$HOME/.gitconfig"
 
 # github.com の認証は gh に委譲する（CodeCommit 等の credential.helper=store はそのまま維持される）
+# gh が書き込む helper のパスはマシンごとに異なるため、追跡対象外の ~/.gitconfig.local に書き込む
 if command -v gh &> /dev/null && gh auth status &> /dev/null; then
   echo "[setup] Configuring git credential helper for github.com via gh..."
-  gh auth setup-git
+  GIT_CONFIG_GLOBAL="$HOME/.gitconfig.local" gh auth setup-git
 fi
 
 # ruff
