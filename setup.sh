@@ -54,55 +54,6 @@ if [[ "$SHELL" != */zsh ]]; then
   chsh -s "$ZSH_PATH"
 fi
 
-# --- Obsidian ---
-_setup_obsidian() {
-  local install_dir="$HOME/.local/bin"
-  local appimage_path="$install_dir/Obsidian.AppImage"
-
-  if [[ -f "$appimage_path" ]]; then
-    return
-  fi
-
-  local arch
-  case "$(uname -m)" in
-    x86_64) arch="x86_64" ;;
-    aarch64) arch="arm64" ;;
-    *)
-      echo "[setup] Unsupported architecture for Obsidian: $(uname -m). Skipping."
-      return
-      ;;
-  esac
-
-  echo "[setup] Installing Obsidian (AppImage)..."
-
-  local download_url
-  download_url="$(curl -fsSL https://api.github.com/repos/obsidianmd/obsidian-releases/releases/latest \
-    | grep -o "\"browser_download_url\": *\"[^\"]*${arch}\.AppImage\"" \
-    | head -n1 \
-    | sed -E 's/.*"(https[^"]+)"/\1/')"
-
-  if [[ -z "$download_url" ]]; then
-    echo "[setup] Failed to resolve Obsidian AppImage download URL. Skipping."
-    return
-  fi
-
-  mkdir -p "$install_dir"
-  curl -fsSL "$download_url" -o "$appimage_path"
-  chmod +x "$appimage_path"
-
-  mkdir -p "$HOME/.local/share/applications"
-  cat > "$HOME/.local/share/applications/obsidian.desktop" <<EOF
-[Desktop Entry]
-Name=Obsidian
-Exec=$appimage_path %U
-Terminal=false
-Type=Application
-Categories=Office;
-EOF
-}
-
-_setup_obsidian
-
 # --- Directories ---
 mkdir -p "$HOME/.config"
 mkdir -p "$HOME/.config/tmux"
@@ -163,12 +114,6 @@ echo "
 
 $ git config --file ~/.gitconfig.local --add user.name 'Your Name'
 $ git config --file ~/.gitconfig.local --add user.email 'Your Email'
-"
-
-echo "
-[setup] Obsidian(AppImage)の実行に失敗する場合、libfuse2が必要な可能性があるため以下を実行すること
-
-$ sudo apt-get install -y libfuse2
 "
 
 echo "[setup] Setup complete!"
