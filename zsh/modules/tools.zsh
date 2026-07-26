@@ -1,9 +1,6 @@
 # Initialize Starship
 eval "$(starship init zsh)"
 
-# Initialize zoxide (smarter cd)
-eval "$(zoxide init zsh)"
-
 # Function to setup Homebrew environment
 _setup_homebrew_env() {
   if [[ -d "/home/linuxbrew/.linuxbrew" ]]; then
@@ -17,6 +14,9 @@ _setup_homebrew_env() {
 
 # Setup Homebrew environment
 _setup_homebrew_env
+
+# Initialize zoxide (smarter cd)
+eval "$(zoxide init zsh)"
 
 # nvm (Node.js version manager)
 export NVM_DIR="$HOME/.nvm"
