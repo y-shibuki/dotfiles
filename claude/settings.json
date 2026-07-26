@@ -103,11 +103,7 @@
     ],
     "deny": []
   },
-  "statusLine": {
-    "type": "command",
-    "command": "bash ~/.config/claude/statusline.sh",
-    "padding": 0
-  },
+  "model": "sonnet",
   "hooks": {
     "Stop": [
       {
@@ -120,11 +116,16 @@
       }
     ]
   },
+  "statusLine": {
+    "type": "command",
+    "command": "bash ~/.config/claude/statusline.sh",
+    "padding": 0
+  },
   "enabledPlugins": {
     "github@claude-plugins-official": true,
-    "skill-creator@claude-plugins-official": true
+    "skill-creator@claude-plugins-official": true,
+    "lua-lsp@claude-plugins-official": true
   },
   "alwaysThinkingEnabled": true,
-  "effortLevel": "medium",
-  "model": "sonnet"
+  "effortLevel": "medium"
 }
