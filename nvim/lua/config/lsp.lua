@@ -6,4 +6,5 @@ vim.lsp.enable({
   'dockerls',     -- Docker
   'ts_ls',        -- TypeScript/JavaScript
   'bashls',       -- Bash
+  'gopls',        -- Go
 })
