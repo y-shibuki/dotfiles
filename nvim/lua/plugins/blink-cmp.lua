@@ -1,15 +1,14 @@
 return {
   "saghen/blink.cmp",
   lazy = false, -- lazy loading handled internally
-  -- optional: provides snippets for the snippet source
-  dependencies = "rafamadriz/friendly-snippets",
   -- use a release tag to download pre-built binaries
   version = "v0.*",
   opts = {
-    -- 'default' for mappings similar to built-in completion
-    -- 'super-tab' for mappings similar to vscode (tab to accept, arrow keys to navigate)
-    -- 'enter' for mappings similar to 'super-tab' but with 'enter' to accept
-    keymap = { preset = "default" },
+    keymap = {
+      preset = "enter",
+      ["<Tab>"] = { "select_next", "fallback" },
+      ["<S-Tab>"] = { "select_prev", "fallback" },
+    },
 
     appearance = {
       -- sets the fallback highlight groups to nvim-cmp's highlight groups
@@ -24,7 +23,7 @@ return {
     -- default list of enabled providers defined so that you can extend it
     -- elsewhere in your config, without redefining it, via `opts_extend`
     sources = {
-      default = { "lsp", "path", "snippets", "buffer" },
+      default = { "lsp", "path", "buffer" },
       -- optionally disable cmdline completions
       -- cmdline = {},
     },
