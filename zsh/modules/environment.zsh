@@ -2,7 +2,7 @@
 export EDITOR="nvim"
 export VISUAL="$EDITOR"
 export CLAUDE_CONFIG_DIR=$HOME/.config/claude
-# 私的オーバーレイ（非公開リポジトリのクローン先）。存在すれば bin/ skills/ zsh/ を取り込む
+# ローカル拡張のディレクトリ。存在すれば bin/ skills/ zsh/ を取り込む
 export DOTFILES_LOCAL="$HOME/.dotfiles.local"
 
 # PATH管理（typeset -U で重複防止）
