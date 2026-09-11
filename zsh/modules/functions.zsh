@@ -103,20 +103,18 @@ function _update_tmux_window_name() {
     return
   fi
 
+  # wt new が作ったタスク window は slug 名を維持する
+  if [ -n "$(tmux show-options -wqv @task_slug 2>/dev/null)" ]; then
+    return
+  fi
+
   local window_name=""
+  local git_root=$(git rev-parse --show-toplevel 2>/dev/null)
 
-  if [ -n "$SSH_CONNECTION" ] || [ -n "$SSH_CLIENT" ]; then
-    local hostname=$(hostname -s)
-    local current_dir=$(basename "$PWD")
-    window_name="ssh:${hostname}:${current_dir}"
+  if [ -n "$git_root" ]; then
+    window_name=$(basename "$git_root")
   else
-    local git_root=$(git rev-parse --show-toplevel 2>/dev/null)
-
-    if [ -n "$git_root" ]; then
-      window_name=$(basename "$git_root")
-    else
-      window_name=$(basename "$PWD")
-    fi
+    window_name=$(basename "$PWD")
   fi
 
   if [ ${#window_name} -gt 30 ]; then
