@@ -1,28 +1,52 @@
-# Initialize Starship
+# starship を初期化
 eval "$(starship init zsh)"
 
-# Function to setup Homebrew environment
-_setup_homebrew_env() {
-  if [[ -d "/home/linuxbrew/.linuxbrew" ]]; then
-    eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
-  elif [[ -d "/opt/homebrew" ]]; then
-    eval "$(/opt/homebrew/bin/brew shellenv)"
-  elif [[ -d "/usr/local/Homebrew" ]]; then
-    eval "$(/usr/local/bin/brew shellenv)"
-  fi
-}
+# Homebrewの環境変数を設定（インストール場所はOS/アーキテクチャで異なる）
+if [[ -d "/home/linuxbrew/.linuxbrew" ]]; then
+  eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+elif [[ -d "/opt/homebrew" ]]; then
+  eval "$(/opt/homebrew/bin/brew shellenv)"
+elif [[ -d "/usr/local/Homebrew" ]]; then
+  eval "$(/usr/local/bin/brew shellenv)"
+fi
 
-# Setup Homebrew environment
-_setup_homebrew_env
-
-# Initialize zoxide (smarter cd)
+# zoxide を初期化
 eval "$(zoxide init zsh)"
 
-# nvm (Node.js version manager)
+# nvm（Node.jsバージョン管理）- 初回利用時まで読み込みを遅延
 export NVM_DIR="$HOME/.nvm"
-[ -s "$(brew --prefix nvm)/nvm.sh" ] && source "$(brew --prefix nvm)/nvm.sh"
 
-# FZF Config
+function _load_nvm() {
+  unset -f nvm node npm npx corepack
+  [ -s "$HOMEBREW_PREFIX/opt/nvm/nvm.sh" ] && source "$HOMEBREW_PREFIX/opt/nvm/nvm.sh"
+}
+
+function nvm() {
+  _load_nvm
+  nvm "$@"
+}
+
+function node() {
+  _load_nvm
+  node "$@"
+}
+
+function npm() {
+  _load_nvm
+  npm "$@"
+}
+
+function npx() {
+  _load_nvm
+  npx "$@"
+}
+
+function corepack() {
+  _load_nvm
+  corepack "$@"
+}
+
+# fzf の設定
 source <(fzf --zsh)
 export FZF_DEFAULT_COMMAND="fd --type f --hidden --exclude .git"
 export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
@@ -38,9 +62,8 @@ export FZF_DEFAULT_OPTS="\
 
 show_file_or_dir_preview="if [ -d {} ]; then eza --tree --color=always {} | head -200; else bat -n --color=always --line-range :500 {}; fi"
 
-# Advanced customization of fzf options via _fzf_comprun function
-# - The first argument to the function is the name of the command.
-# - You should make sure to pass the rest of the arguments to fzf.
+# fzf補完のプレビューをコマンドごとにカスタマイズする
+# - 第1引数がコマンド名、残りの引数はそのままfzfに渡す
 _fzf_comprun() {
   local command=$1
   shift
@@ -53,11 +76,17 @@ _fzf_comprun() {
   esac
 }
 
-# Catppuccin Mocha テーマを bat にインストール
-if [[ ! -f "$(bat --config-dir)/themes/Catppuccin Mocha.tmTheme" ]]; then
-  mkdir -p "$(bat --config-dir)/themes"
-  curl -o "$(bat --config-dir)/themes/Catppuccin Mocha.tmTheme" \
+# Catppuccin Mocha テーマを bat にインストール（初回のみ。マーカーファイルで bat の起動自体を毎回避ける）
+bat_theme_marker="$HOME/.cache/bat-catppuccin-mocha-installed"
+if [[ ! -f "$bat_theme_marker" ]]; then
+  bat_config_dir="$(bat --config-dir)"
+  mkdir -p "$bat_config_dir/themes"
+  curl -o "$bat_config_dir/themes/Catppuccin Mocha.tmTheme" \
     "https://github.com/catppuccin/bat/raw/main/themes/Catppuccin%20Mocha.tmTheme"
   bat cache --build
+  mkdir -p "$(dirname "$bat_theme_marker")"
+  touch "$bat_theme_marker"
+  unset bat_config_dir
 fi
+unset bat_theme_marker
 export BAT_THEME="Catppuccin Mocha"
