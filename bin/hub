@@ -1,0 +1,332 @@
+#!/usr/bin/env bash
+# hub: 全 tmux セッション横断のデスクトップ
+#   hub            hub セッションへ移動（無ければ作成）
+#   hub ensure     hub セッションを作成するだけ
+#   hub dashboard  常駐ダッシュボード本体（hub セッション内で起動される）
+#   hub jump       単発のジャンプ用 fzf（tmux popup から呼ぶ）
+#   hub list       一覧行を出力（fzf の入力）
+#   hub preview    選択中ウィンドウのプレビュー
+set -u
+export PATH="${DOTFILES_LOCAL:-$HOME/.dotfiles.local}/bin:$HOME/.local/bin:/opt/homebrew/bin:/home/linuxbrew/.linuxbrew/bin:$PATH"
+export GIT_OPTIONAL_LOCKS=0
+for _loc in C.UTF-8 C.utf8 en_US.UTF-8 en_US.utf8; do
+  if locale -a 2>/dev/null | grep -qx "$_loc"; then
+    export LC_ALL=$_loc
+    break
+  fi
+done
+
+HUB_BIN="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/$(basename "${BASH_SOURCE[0]}")"
+HUB_SESSION="hub"
+HUB_SOCKET="${HUB_SOCKET:-${TMPDIR:-/tmp}/hub-fzf-$(id -u).sock}"
+HUB_ACTIVITY="${HUB_SOCKET%.sock}.activity"
+HUB_LIST="${HUB_SOCKET%.sock}.list"
+REFRESH_SEC=3
+ACTIVITY_GRACE=2
+# ローカル拡張のフック。実行可能ならヘッダーに出力を差し込む
+HUB_STATUS_HOOK="${DOTFILES_LOCAL:-$HOME/.dotfiles.local}/hub-status"
+
+# Catppuccin Mocha
+R=$'\033[0m'
+BOLD=$'\033[1m'
+DIM=$'\033[2m'
+RED=$'\033[38;2;243;139;168m'
+GREEN=$'\033[38;2;166;227;161m'
+YELLOW=$'\033[38;2;249;226;175m'
+BLUE=$'\033[38;2;137;180;250m'
+MAUVE=$'\033[38;2;203;166;247m'
+PEACH=$'\033[38;2;250;179;135m'
+TEAL=$'\033[38;2;148;226;213m'
+SKY=$'\033[38;2;137;220;235m'
+TEXT=$'\033[38;2;205;214;244m'
+OVERLAY=$'\033[38;2;108;112;134m'
+TODAY=$'\033[1m\033[48;2;203;166;247m\033[38;2;17;17;27m'
+
+# Nerd Font アイコン（bash 3.2 は \u を解釈しないため UTF-8 バイト列で定義）
+ICON_BELL=$'\xef\x83\xb3'
+ICON_BRANCH=$'\xee\x82\xa0'
+ICON_WORKTREE=$'\xef\x84\xa6'
+ICON_WINDOW=$'\xef\x8b\x90'
+ICON_FOLDER=$'\xef\x81\xbb'
+
+shorten_path() {
+  local tilde='~' p
+  p="${1/#"$HOME"/$tilde}"
+  if (( ${#p} > 42 )); then
+    p="…${p: -41}"
+  fi
+  printf '%s' "$p"
+}
+
+pad() {
+  local width=$1 s=$2
+  printf '%-*.*s' "$width" "$width" "$s"
+}
+
+# ANSI エスケープを除いた表示幅で右詰めする
+pad_ansi() {
+  local width=$1 s=$2 plain
+  plain=$(printf '%s' "$s" | sed -E $'s/\033\[[0-9;]*m//g')
+  local n=$(( width - ${#plain} ))
+  (( n < 0 )) && n=0
+  printf '%s%*s' "$s" "$n" ""
+}
+
+git_summary() {
+  local p=$1
+  [[ -d $p ]] || return
+  git -C "$p" rev-parse --is-inside-work-tree &>/dev/null || return
+  local branch dirty ahead wt=""
+  branch=$(git -C "$p" symbolic-ref --short -q HEAD 2>/dev/null || git -C "$p" rev-parse --short HEAD 2>/dev/null)
+  dirty=$(git -C "$p" status --porcelain 2>/dev/null | wc -l | tr -d ' ')
+  ahead=$(git -C "$p" rev-list --count '@{u}..HEAD' 2>/dev/null || echo 0)
+  [[ $(git -C "$p" rev-parse --git-dir 2>/dev/null) == *"/worktrees/"* ]] && wt=1
+  printf '%s\t%s\t%s\t%s' "$branch" "$dirty" "$ahead" "$wt"
+}
+
+# README 用のデモ表示。HUB_DEMO=1 のとき tmux の代わりにダミーデータを使う
+demo_windows() {
+  printf '%s\n' \
+    $'@1\tdotfiles\t1\tfeat/hub-dashboard\t1\t0\t1\tclaude\t~/worktrees/dotfiles/feat-hub-dashboard\tdone\tfeat/hub-dashboard\t2\t1\t1' \
+    $'@2\tdotfiles\t2\tfix/zsh-startup\t0\t0\t1\tclaude\t~/worktrees/dotfiles/fix-zsh-startup\tworking\tfix/zsh-startup\t5\t0\t1' \
+    $'@3\tzoekt-tui\t1\tfeat/regex-search\t1\t0\t0\tclaude\t~/worktrees/zoekt-tui/feat-regex-search\tattention\tfeat/regex-search\t0\t2\t1' \
+    $'@4\tzoekt-tui\t2\tzoekt-tui\t0\t0\t0\tnvim\t~/repos/github.com/y-shibuki/zoekt-tui\t-\tmain\t0\t0\t-' \
+    $'@5\tapi\t1\tfix/rate-limit\t0\t0\t0\tclaude\t~/worktrees/api/fix-rate-limit\tidle\tfix/rate-limit\t3\t0\t1' \
+    $'@6\tdefault\t1\t.dotfiles\t0\t1\t1\tlazygit\t~/.dotfiles\t-\tmain\t0\t0\t-' \
+    $'@7\tdefault\t2\tworkspace\t0\t0\t1\tzsh\t~/workspace\t-\t-\t0\t0\t-'
+}
+
+# 出力: window_id \t path \t 表示列...
+cmd_list() {
+  local fmt=$'#{window_id}\t#{session_name}\t#{window_index}\t#{window_name}\t#{window_bell_flag}\t#{window_active}\t#{session_attached}\t#{pane_current_command}\t#{pane_current_path}\t#{@claude_state}'
+  local source="tmux list-windows -a -F \"\$fmt\" 2>/dev/null"
+  [[ -n ${HUB_DEMO:-} ]] && source="demo_windows"
+  eval "$source" | sort -t $'\t' -k2,2 -k3,3n |
+  while IFS=$'\t' read -r wid sname widx wname bell active attached cmd path cstate dbranch ddirty dahead dwt; do
+    [[ $sname == "$HUB_SESSION" ]] && continue
+    if [[ -n ${HUB_DEMO:-} ]]; then
+      [[ $cstate == - ]] && cstate=""
+      [[ $dbranch == - ]] && dbranch=""
+      [[ $dwt == - ]] && dwt=""
+    fi
+
+    local is_claude="" cmd_label cmd_color
+    if [[ -n $cstate || $cmd =~ ^[0-9]+\.[0-9]+\.[0-9]+$ || $cmd == claude ]]; then
+      is_claude=1
+    fi
+    if [[ $cmd =~ ^-?(zsh|bash|fish|sh)$ ]]; then
+      is_claude=""
+      cstate=""
+    fi
+
+    if [[ -n $is_claude ]]; then
+      case $cstate in
+        working)   cmd_label="claude:working"; cmd_color=$BLUE ;;
+        attention) cmd_label="claude:waiting"; cmd_color=$YELLOW ;;
+        done)      cmd_label="claude:done"; cmd_color=$GREEN ;;
+        *)         cmd_label="claude"; cmd_color=$MAUVE ;;
+      esac
+    else
+      cmd_label=$cmd; cmd_color=$TEXT
+    fi
+
+    local bell_mark="  "
+    [[ $bell == 1 ]] && bell_mark="${RED}${ICON_BELL}${R} "
+
+    local branch="" dirty="" ahead="" wt="" git_col=""
+    if [[ -n ${HUB_DEMO:-} ]]; then
+      branch=$dbranch; dirty=$ddirty; ahead=$dahead; wt=$dwt
+    else
+      IFS=$'\t' read -r branch dirty ahead wt <<< "$(git_summary "$path")"
+    fi
+    if [[ -n $branch ]]; then
+      local bicon=$ICON_BRANCH
+      [[ -n $wt ]] && bicon=$ICON_WORKTREE
+      git_col="${MAUVE}${bicon} $(pad 22 "$branch")${R} "
+      local st=""
+      [[ ${dirty:-0} -gt 0 ]] && st+="${YELLOW}●${dirty}${R} "
+      [[ ${ahead:-0} -gt 0 ]] && st+="${SKY}↑${ahead}${R} "
+      [[ -z $st ]] && st="${GREEN}✓${R} "
+      git_col+="$(pad_ansi 10 "$st")"
+    else
+      git_col="$(pad 35 "")"
+    fi
+
+    local name_color=$TEXT
+    [[ $active == 1 && $attached -gt 0 ]] && name_color="${BOLD}${TEXT}"
+
+    printf '%s\t%s\t %s%s%s %s%s%s%s %s%s%s %s%s%s\n' \
+      "$wid" "$path" \
+      "$OVERLAY" "$(pad 10 "$sname")" "$R" \
+      "$name_color" "$(pad 26 "$wname")" "$R" "$bell_mark" \
+      "$cmd_color" "$(pad 15 "$cmd_label")" "$R" \
+      "$git_col" \
+      "${DIM}$(shorten_path "$path")" "$R"
+  done
+}
+
+demo_preview() {
+  printf '%s%s %s%s › %s%s%s   %s%s%s\n\n' "$OVERLAY" "$ICON_WINDOW" "$R" "${MAUVE}dotfiles" "feat/hub-dashboard" "$R" "$ICON_FOLDER" "$DIM" "~/worktrees/dotfiles/feat-hub-dashboard" "$R"
+  printf '%s── screen ──%s\n' "$OVERLAY" "$R"
+  cat <<'EOT'
+● bin/hub に reload-sync と操作中の差し替え保留を実装しました。
+  カーソル操作中は一覧を更新せず、手が止まってから反映されます。
+
+  変更点:
+  - refresh_loop: 一覧のハッシュ比較で変化があるときだけ送信
+  - focus / change イベントで最終操作時刻を記録
+
+◆ Cogitated for 12s · done 14:31
+
+❯
+EOT
+  printf '\n%s── git ──%s\n' "$OVERLAY" "$R"
+  printf ' \033[32mM\033[0m bin/hub\n \033[32mA\033[0m docs/hub.png\n'
+  printf '\033[33ma1b2c3d\033[0m \033[33m(\033[1;36mHEAD -> \033[1;32mfeat/hub-dashboard\033[33m)\033[0m feat: 変化があったときだけ一覧を差し替える\n'
+  printf '\033[33m9f8e7d6\033[0m feat: hub に fzf 常駐ダッシュボードを追加する\n'
+  printf '\033[33m69a2594\033[0m \033[33m(\033[1;31morigin/main\033[33m, \033[1;32mmain\033[33m)\033[0m Merge pull request #3 from y-shibuki/feat/nvim-git-ux-and-plugins\n'
+}
+
+cmd_preview() {
+  local wid=$1
+  [[ -n $wid ]] || return
+  if [[ -n ${HUB_DEMO:-} ]]; then
+    demo_preview
+    return
+  fi
+  local path cmd sname wname
+  IFS=$'\t' read -r path cmd sname wname < <(tmux display-message -p -t "$wid" $'#{pane_current_path}\t#{pane_current_command}\t#{session_name}\t#{window_name}' 2>/dev/null)
+  printf '%s%s %s%s › %s%s%s   %s%s%s\n\n' "$OVERLAY" "$ICON_WINDOW" "$R" "${MAUVE}${sname}" "$wname" "$R" "$ICON_FOLDER" "$DIM" "$(shorten_path "$path")" "$R"
+
+  printf '%s── screen ──%s\n' "$OVERLAY" "$R"
+  tmux capture-pane -p -t "$wid" -S -60 2>/dev/null | sed -e 's/[[:space:]]*$//' | grep -v '^$' | tail -14
+  printf '\n'
+
+  if git -C "$path" rev-parse --is-inside-work-tree &>/dev/null; then
+    printf '%s── git ──%s\n' "$OVERLAY" "$R"
+    git -C "$path" -c color.status=always status --short 2>/dev/null | head -12
+    git -C "$path" log --oneline --color=always --decorate -6 2>/dev/null
+  fi
+}
+
+cmd_label() {
+  printf ' %s%s HUB %s %s%s%s ' "$BOLD" "$PEACH" "$R" "$TEXT" "$(date '+%Y-%m-%d (%a) %H:%M')" "$R"
+}
+
+cmd_header() {
+  local today
+  today=$(date +%d | sed 's/^0//')
+  if command -v cal >/dev/null; then
+    LC_TIME=C cal -h | sed -E -e 's/[[:space:]]*$//' -e '/^$/d' \
+      -e "1s/.*/${MAUVE}${BOLD}&${R}/" \
+      -e "2s/.*/${OVERLAY}&${R}/" \
+      -e "3,\$s/(^| )(${today})( |$)/\1${TODAY}\2${R}\3/"
+  else
+    printf '%s%s%s  %s(cal が無いため省略: apt install ncal)%s\n' "$MAUVE$BOLD" "$(date '+%B %Y')" "$R" "$OVERLAY" "$R"
+  fi
+  if [[ -z ${HUB_DEMO:-} && -x $HUB_STATUS_HOOK ]]; then
+    printf '\n'
+    "$HUB_STATUS_HOOK" 2>/dev/null
+  fi
+  local notes_key=""
+  [[ -z ${HUB_DEMO:-} ]] && command -v notes >/dev/null && notes_key="${PEACH}^b${OVERLAY} notes  "
+  printf '\n%s enter%s jump  %s^n%s new task  %s%s^o%s lazygit  %s^x%s kill  %s^r%s reload%s\n' \
+    "$PEACH" "$OVERLAY" "$PEACH" "$OVERLAY" "$notes_key" "$PEACH" "$OVERLAY" "$PEACH" "$OVERLAY" "$PEACH" "$OVERLAY" "$R"
+  printf '\n%s%s%s%s%s%spath%s\n' \
+    "$OVERLAY$BOLD" "$(pad 11 session)" "$(pad 29 window)" "$(pad 18 command)" "$(pad 23 branch)" "$(pad 10 status)" "$R"
+}
+
+fzf_common() {
+  fzf --no-tmux --ansi --exact \
+    --layout=reverse --border=rounded --border-label-pos=3 --margin=1,4% \
+    --border-label="$(cmd_label)" \
+    --delimiter=$'\t' --with-nth=3.. --nth=3.. \
+    --header="$(cmd_header)" \
+    --prompt='  ' --pointer='▌' --info=hidden --no-separator --no-scrollbar \
+    --preview="$HUB_BIN preview {1}" --preview-window=down,50%,border-top,nowrap \
+    --bind "ctrl-o:execute(tmux display-popup -E -d {2} -w 90% -h 90% lazygit)" \
+    --bind "ctrl-r:reload($HUB_BIN list)" \
+    --bind "ctrl-n:execute(tmux display-popup -E -w 70% -h 50% wt new)+reload($HUB_BIN list)" \
+    --bind "ctrl-b:execute-silent(command -v notes >/dev/null && notes ensure && tmux switch-client -t notes)" \
+    "$@"
+}
+
+# 裏で一覧を再生成し、内容が変わったときだけ fzf に差し替えを送る。
+# 直近 ACTIVITY_GRACE 秒以内にカーソル操作があれば見送り、手が止まってから反映する
+refresh_loop() {
+  local prev_hash="" last_list=0 last_minute="" now last_act hash minute actions
+  until [[ -S $HUB_SOCKET ]]; do sleep 0.2; done
+  while [[ -S $HUB_SOCKET ]]; do
+    sleep 1
+    now=$(date +%s)
+    last_act=$(cat "$HUB_ACTIVITY" 2>/dev/null || echo 0)
+    (( now - last_act < ACTIVITY_GRACE )) && continue
+    (( now - last_list < REFRESH_SEC )) && continue
+    last_list=$now
+    actions=""
+    "$HUB_BIN" list > "$HUB_LIST.tmp" && mv -f "$HUB_LIST.tmp" "$HUB_LIST"
+    hash=$(cksum < "$HUB_LIST")
+    if [[ $hash != "$prev_hash" ]]; then
+      prev_hash=$hash
+      actions="reload-sync(cat $HUB_LIST)"
+    fi
+    minute=$(date +%H:%M)
+    if [[ $minute != "$last_minute" ]]; then
+      last_minute=$minute
+      actions+="${actions:++}transform-border-label($HUB_BIN label)+transform-header($HUB_BIN header)"
+    fi
+    [[ -z $actions ]] && continue
+    curl -s --unix-socket "$HUB_SOCKET" -X POST http://localhost/ -d "$actions" >/dev/null 2>&1 || break
+  done
+}
+
+cmd_dashboard() {
+  while true; do
+    rm -f "$HUB_SOCKET" "$HUB_ACTIVITY" "$HUB_LIST"
+    refresh_loop &
+    local refresher=$!
+    "$HUB_BIN" list | fzf_common \
+      --track --id-nth=1 \
+      --listen="$HUB_SOCKET" \
+      --bind "focus:execute-silent(date +%s > $HUB_ACTIVITY)" \
+      --bind "change:execute-silent(date +%s > $HUB_ACTIVITY)" \
+      --bind "enter:execute-silent(tmux switch-client -t {1})" \
+      --bind "ctrl-x:execute-silent(tmux kill-window -t {1})+reload($HUB_BIN list)" \
+      --bind "esc:ignore,ctrl-c:ignore"
+    kill "$refresher" 2>/dev/null
+    rm -f "$HUB_SOCKET" "$HUB_ACTIVITY" "$HUB_LIST"
+    sleep 0.5
+  done
+}
+
+cmd_jump() {
+  local sel
+  sel=$("$HUB_BIN" list | fzf_common --bind "enter:accept" | cut -f1)
+  [[ -n $sel ]] && tmux switch-client -t "$sel"
+}
+
+cmd_ensure() {
+  tmux has-session -t "=$HUB_SESSION" 2>/dev/null && return
+  tmux new-session -d -s "$HUB_SESSION" -n desktop -c "$HOME" "$HUB_BIN dashboard"
+}
+
+cmd_open() {
+  cmd_ensure
+  if [[ -n ${TMUX:-} ]]; then
+    tmux switch-client -t "$HUB_SESSION"
+  else
+    tmux attach-session -t "$HUB_SESSION"
+  fi
+}
+
+case "${1:-open}" in
+  open)      cmd_open ;;
+  ensure)    cmd_ensure ;;
+  dashboard) cmd_dashboard ;;
+  jump)      cmd_jump ;;
+  list)      cmd_list ;;
+  preview)   cmd_preview "${2:-}" ;;
+  label)     cmd_label ;;
+  header)    cmd_header ;;
+  *) echo "usage: hub [open|ensure|dashboard|jump|list|preview <window_id>]" >&2; exit 1 ;;
+esac

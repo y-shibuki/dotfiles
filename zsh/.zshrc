@@ -2,6 +2,10 @@ for config in "$HOME/.dotfiles/zsh/modules/"*.zsh(N); do
   source "$config"
 done
 
+for config in "$DOTFILES_LOCAL/zsh/"*.zsh(N); do
+  source "$config"
+done
+
 if [[ -r "$HOME/.zshrc.local" ]]; then
     source "$HOME/.zshrc.local"
 fi

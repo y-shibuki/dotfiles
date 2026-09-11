@@ -103,14 +103,64 @@
     ],
     "deny": []
   },
-  "model": "sonnet",
+  "model": "claude-fable-5-1[1m]",
   "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.config/claude/hooks/tmux-state.sh idle"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.config/claude/hooks/tmux-state.sh working"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.config/claude/hooks/tmux-state.sh working"
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.config/claude/hooks/tmux-state.sh attention --bell"
+          }
+        ]
+      }
+    ],
     "Stop": [
       {
         "hooks": [
           {
             "type": "command",
-            "command": "[ -n \"$TMUX_PANE\" ] && tty=$(tmux display-message -p -t \"$TMUX_PANE\" '#{pane_tty}' 2>/dev/null) && printf '\\a' > \"$tty\"; true"
+            "command": "bash ~/.config/claude/hooks/tmux-state.sh done --bell"
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.config/claude/hooks/tmux-state.sh clear"
           }
         ]
       }
@@ -128,6 +178,6 @@
   },
   "alwaysThinkingEnabled": true,
   "effortLevel": "medium",
-  "agentPushNotifEnabled": true,
-  "tui": "fullscreen"
+  "tui": "fullscreen",
+  "agentPushNotifEnabled": true
 }
