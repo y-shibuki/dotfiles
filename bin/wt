@@ -1,0 +1,294 @@
+#!/usr/bin/env bash
+# wt: worktree ベースのタスクライフサイクル
+#   wt new [slug] [repo-dir]  worktree 作成 + tmux window 生成 + claude 起動
+#   wt pr                     現在のタスクを push して draft PR を作る
+#   wt done [slug] [--force]  worktree 削除 + window 破棄（未コミット/未プッシュがあれば拒否）
+#   wt clean                  不要な worktree を複数選択して片付ける
+#   wt list                   worktree の一覧と状態
+set -u
+export PATH="$HOME/.local/bin:/opt/homebrew/bin:/home/linuxbrew/.linuxbrew/bin:$PATH"
+for _loc in C.UTF-8 C.utf8 en_US.UTF-8 en_US.utf8; do
+  if locale -a 2>/dev/null | grep -qx "$_loc"; then
+    export LC_ALL=$_loc
+    break
+  fi
+done
+
+WORKTREE_ROOT="${TASK_WORKTREE_ROOT:-$HOME/worktrees}"
+
+R=$'\033[0m'
+BOLD=$'\033[1m'
+DIM=$'\033[2m'
+RED=$'\033[38;2;243;139;168m'
+GREEN=$'\033[38;2;166;227;161m'
+YELLOW=$'\033[38;2;249;226;175m'
+MAUVE=$'\033[38;2;203;166;247m'
+OVERLAY=$'\033[38;2;108;112;134m'
+
+info() { printf '%s›%s %s\n' "$MAUVE" "$R" "$*"; }
+ok()   { printf '%s✓%s %s\n' "$GREEN" "$R" "$*"; }
+warn() { printf '%s!%s %s\n' "$YELLOW" "$R" "$*"; }
+die()  { printf '%s✗%s %s\n' "$RED" "$R" "$*" >&2; exit 1; }
+
+slug_to_dirname() { printf '%s' "${1//\//-}"; }
+
+# tmux のセッション名に使えるよう、先頭のドットを除き . と : を _ に置き換える
+repo_name() {
+  basename "$1" | sed -e 's/^\.//' -e 's/[.:]/_/g'
+}
+
+# 引数のディレクトリ（省略時は cwd）が属するリポジトリのメイン worktree を返す
+main_root() {
+  local dir=${1:-$PWD}
+  git -C "$dir" worktree list --porcelain 2>/dev/null | head -1 | sed 's/^worktree //'
+}
+
+default_branch() {
+  local root=$1 ref
+  ref=$(git -C "$root" symbolic-ref -q --short refs/remotes/origin/HEAD 2>/dev/null)
+  if [[ -n $ref ]]; then
+    printf '%s' "${ref#origin/}"
+    return
+  fi
+  for b in main master develop; do
+    git -C "$root" show-ref -q --verify "refs/heads/$b" && { printf '%s' "$b"; return; }
+  done
+  git -C "$root" symbolic-ref -q --short HEAD
+}
+
+# worktree ディレクトリから slug（ブランチ名）を返す
+slug_of_worktree() {
+  git -C "$1" symbolic-ref -q --short HEAD 2>/dev/null
+}
+
+find_window_by_slug() {
+  tmux list-windows -a -F '#{window_id}	#{@task_slug}' 2>/dev/null | awk -F'\t' -v s="$1" '$2==s{print $1; exit}'
+}
+
+select_repo() {
+  local sel
+  sel=$(ghq list | fzf --prompt="Repository: " --height=40% --layout=reverse --border) || return 1
+  [[ -n $sel ]] && printf '%s' "$(ghq root)/$sel"
+}
+
+cmd_new() {
+  local slug=${1:-} repo_dir=${2:-}
+  if [[ -z $repo_dir ]]; then
+    repo_dir=$(main_root "$PWD")
+    if [[ -z $repo_dir ]]; then
+      repo_dir=$(select_repo) || die "リポジトリが選択されませんでした"
+    fi
+  fi
+  [[ -d $repo_dir/.git || -f $repo_dir/.git ]] || die "git リポジトリではありません: $repo_dir"
+  repo_dir=$(main_root "$repo_dir")
+
+  if [[ -z $slug ]]; then
+    printf '%s' "${MAUVE}slug (例: feat/hub-dashboard)${R}: "
+    read -r slug
+  fi
+  [[ -n $slug ]] || die "slug が空です"
+  [[ $slug =~ ^[A-Za-z0-9._/-]+$ ]] || die "slug に使えるのは英数字と . _ - / だけです"
+
+  local repo dir base
+  repo=$(repo_name "$repo_dir")
+  dir="$WORKTREE_ROOT/$repo/$(slug_to_dirname "$slug")"
+  base=$(default_branch "$repo_dir")
+
+  if [[ -d $dir ]]; then
+    warn "worktree は既に存在します: $dir"
+  else
+    mkdir -p "$(dirname "$dir")"
+    git -C "$repo_dir" fetch -q origin 2>/dev/null
+    if git -C "$repo_dir" show-ref -q --verify "refs/heads/$slug"; then
+      info "既存ブランチ $slug で worktree を作成"
+      git -C "$repo_dir" worktree add "$dir" "$slug" || die "worktree の作成に失敗"
+    else
+      local start="$base"
+      git -C "$repo_dir" show-ref -q --verify "refs/remotes/origin/$base" && start="origin/$base"
+      info "$start から $slug を作成"
+      git -C "$repo_dir" worktree add -b "$slug" "$dir" "$start" || die "worktree の作成に失敗"
+    fi
+    ok "worktree: $dir"
+  fi
+
+  [[ -f $repo_dir/CLAUDE.md ]] || warn "CLAUDE.md がありません。Claude 起動後に /init で作成できます"
+
+  if ! command -v tmux >/dev/null || ! tmux info &>/dev/null; then
+    info "tmux が起動していないため window は作りません。cd $dir"
+    return
+  fi
+
+  local wid
+  wid=$(find_window_by_slug "$slug")
+  if [[ -z $wid ]]; then
+    if tmux has-session -t "=$repo" 2>/dev/null; then
+      wid=$(tmux new-window -d -P -F '#{window_id}' -t "=$repo" -n "$slug" -c "$dir")
+    else
+      wid=$(tmux new-session -d -P -F '#{window_id}' -s "$repo" -n "$slug" -c "$dir")
+    fi
+    tmux set-option -w -t "$wid" @task_slug "$slug"
+    tmux send-keys -t "$wid" "claude" Enter
+    ok "window: $repo:$slug"
+  else
+    info "window は既にあります: $repo:$slug"
+  fi
+  if [[ -n ${TMUX:-} ]]; then
+    tmux switch-client -t "$wid"
+  else
+    tmux attach-session -t "=$repo" \; select-window -t "$wid"
+  fi
+}
+
+cmd_pr() {
+  local root slug base
+  root=$(git rev-parse --show-toplevel 2>/dev/null) || die "git リポジトリの中で実行してください"
+  slug=$(slug_of_worktree "$root")
+  [[ -n $slug ]] || die "ブランチが検出できません（detached HEAD）"
+  base=$(default_branch "$(main_root "$root")")
+  [[ $slug != "$base" ]] || die "$base ブランチからは PR を作れません。wt new でタスクを切ってください"
+
+  if [[ -n $(git -C "$root" status --porcelain) ]]; then
+    warn "未コミットの変更があります。コミットしてから PR を作ることを推奨します"
+  fi
+  if ! git -C "$root" rev-parse -q --verify '@{u}' &>/dev/null; then
+    info "origin/$slug へ push"
+    git -C "$root" push -u origin "$slug" || die "push に失敗"
+  elif [[ $(git -C "$root" rev-list --count '@{u}..HEAD') -gt 0 ]]; then
+    info "未プッシュのコミットを push"
+    git -C "$root" push || die "push に失敗"
+  fi
+
+  local url
+  if url=$(gh pr view --json url -q .url 2>/dev/null); then
+    ok "PR は既にあります: $url"
+    return
+  fi
+  gh pr create --draft --base "$base" --title "$slug" --fill || die "PR の作成に失敗"
+}
+
+# 削除して良いか判定し、理由を返す（戻り値 0 = 安全）
+worktree_blockers() {
+  local dir=$1 reasons=()
+  [[ -n $(git -C "$dir" status --porcelain 2>/dev/null) ]] && reasons+=("未コミットの変更")
+  if git -C "$dir" rev-parse -q --verify '@{u}' &>/dev/null; then
+    [[ $(git -C "$dir" rev-list --count '@{u}..HEAD') -gt 0 ]] && reasons+=("未プッシュのコミット")
+  else
+    local base
+    base=$(default_branch "$(main_root "$dir")")
+    [[ $(git -C "$dir" rev-list --count "$base..HEAD" 2>/dev/null || echo 0) -gt 0 ]] && reasons+=("upstream 未設定でローカルにだけコミットがある")
+  fi
+  (( ${#reasons[@]} == 0 )) && return 0
+  printf '%s' "${reasons[*]}"
+  return 1
+}
+
+remove_worktree() {
+  local dir=$1 force=${2:-}
+  local root slug blockers
+  root=$(main_root "$dir")
+  slug=$(slug_of_worktree "$dir")
+  if ! blockers=$(worktree_blockers "$dir") && [[ -z $force ]]; then
+    die "$slug は削除できません: ${blockers}（--force で強制）"
+  fi
+
+  local wid
+  wid=$(find_window_by_slug "$slug")
+  if [[ -n $wid ]]; then
+    if [[ -n ${TMUX:-} && $(tmux display-message -p '#{window_id}') == "$wid" ]]; then
+      hub ensure
+      tmux switch-client -t hub
+    fi
+    tmux kill-window -t "$wid"
+    ok "window を閉じました: $slug"
+  fi
+
+  git -C "$root" worktree remove ${force:+--force} "$dir" || die "worktree の削除に失敗: $dir"
+  ok "worktree を削除しました: $dir"
+  if git -C "$root" branch -d "$slug" &>/dev/null; then
+    ok "マージ済みブランチを削除しました: $slug"
+  else
+    info "ブランチ $slug は残しています（未マージ）"
+  fi
+}
+
+cmd_done() {
+  local force="" slug="" dir
+  for a in "$@"; do
+    case $a in
+      --force) force=1 ;;
+      *) slug=$a ;;
+    esac
+  done
+  if [[ -n $slug ]]; then
+    local root repo
+    root=$(main_root "$PWD")
+    [[ -n $root ]] || die "slug 指定時はリポジトリ内で実行してください"
+    repo=$(repo_name "$root")
+    dir="$WORKTREE_ROOT/$repo/$(slug_to_dirname "$slug")"
+  else
+    dir=$(git rev-parse --show-toplevel 2>/dev/null) || die "worktree の中で実行してください"
+  fi
+  [[ -d $dir ]] || die "worktree がありません: $dir"
+  [[ $dir == "$WORKTREE_ROOT"/* ]] || die "$WORKTREE_ROOT 配下の worktree だけを対象にします: $dir"
+  remove_worktree "$dir" "$force"
+}
+
+# 全 worktree の一覧行: dir \t repo \t slug \t window \t 状態
+worktree_rows() {
+  [[ -d $WORKTREE_ROOT ]] || return
+  local repo_dir dir slug wid state
+  for repo_dir in "$WORKTREE_ROOT"/*/; do
+    [[ -d $repo_dir ]] || continue
+    for dir in "$repo_dir"*/; do
+      dir=${dir%/}
+      [[ -d $dir ]] || continue
+      slug=$(slug_of_worktree "$dir")
+      [[ -n $slug ]] || continue
+      wid=$(find_window_by_slug "$slug")
+      if state=$(worktree_blockers "$dir"); then
+        state="${GREEN}clean${R}"
+      else
+        state="${YELLOW}${state}${R}"
+      fi
+      printf '%s\t%s\t%s\t%s\t%s\n' "$dir" "$(basename "${repo_dir%/}")" "$slug" "${wid:+open}" "$state"
+    done
+  done
+}
+
+cmd_list() {
+  local rows
+  rows=$(worktree_rows)
+  [[ -n $rows ]] || { info "worktree はありません（${WORKTREE_ROOT}）"; return; }
+  printf '%s%-14s %-32s %-6s %s%s\n' "$OVERLAY$BOLD" repo slug window state "$R"
+  while IFS=$'\t' read -r dir repo slug win state; do
+    printf '%-14s %-32s %-6s %s\n' "$repo" "$slug" "${win:-${DIM}-${R}}" "$state"
+  done <<< "$rows"
+}
+
+cmd_clean() {
+  local rows sel
+  rows=$(worktree_rows)
+  [[ -n $rows ]] || { info "worktree はありません（${WORKTREE_ROOT}）"; return; }
+  sel=$(printf '%s\n' "$rows" | awk -F'\t' '{printf "%s\t%-14s %-32s %-6s %s\n", $1, $2, $3, ($4==""?"-":$4), $5}' |
+    fzf --ansi --multi --delimiter=$'\t' --with-nth=2.. --layout=reverse --border --height=60% \
+        --prompt="片付ける worktree を選択 (Tab で複数): " \
+        --header="$(printf '%-14s %-32s %-6s %s' repo slug window state)" |
+    cut -f1)
+  [[ -n $sel ]] || { info "キャンセルしました"; return; }
+  printf '%s\n' "$sel"
+  printf '%s' "${YELLOW}上記を削除します。よろしいですか？ [y/N]${R}: "
+  read -r answer
+  [[ $answer =~ ^[Yy]$ ]] || { info "キャンセルしました"; return; }
+  while IFS= read -r dir; do
+    remove_worktree "$dir" || true
+  done <<< "$sel"
+}
+
+case "${1:-}" in
+  new)   shift; cmd_new "$@" ;;
+  pr)    cmd_pr ;;
+  done)  shift; cmd_done "$@" ;;
+  clean) cmd_clean ;;
+  list)  cmd_list ;;
+  *) sed -n '2,7p' "$0" | sed 's/^# \{0,1\}//'; exit 1 ;;
+esac
