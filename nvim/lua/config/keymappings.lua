@@ -29,7 +29,7 @@ map("n", "<C-Left>", "<cmd>vertical resize -2<cr>", { desc = "Decrease window wi
 map("n", "<C-Right>", "<cmd>vertical resize +2<cr>", { desc = "Increase window width" })
 
 -- Select all
-map("n", "<leader>a", "gg<S-v>G", { desc = "Select all" })
+map("n", "<leader>a", "gg<S-v>G", { desc = "󰩬 Select all" })
 
 -- <Space>q で強制終了
 map("n", "<leader>q", ":<C-u>q!<Return>", { noremap = true, silent = true, desc = "Quit" })
