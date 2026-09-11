@@ -103,7 +103,7 @@
     ],
     "deny": []
   },
-  "model": "sonnet",
+  "model": "claude-fable-5-1[1m]",
   "hooks": {
     "SessionStart": [
       {
