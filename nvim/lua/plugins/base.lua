@@ -4,7 +4,7 @@ return {
     "folke/which-key.nvim",
     event = "VeryLazy",
     opts = {
-      preset = "helix",
+      preset = "modern",
       icons = {
         breadcrumb = "»",
         separator = "➜",
@@ -18,10 +18,14 @@ return {
         },
       },
       layout = {
-        height = { min = 4, max = 25 },
-        width = { min = 20, max = 50 },
+        height = { min = 4, max = 30 },
+        width = { min = 20, max = 80 },
         spacing = 3,
         align = "left",
+      },
+      spec = {
+        { "<leader>f", group = "Find" },
+        { "<leader>g", group = "Git" },
       },
     },
   },
@@ -65,6 +69,7 @@ return {
         integrations = {
           alpha = true,
           blink_cmp = true,
+          flash = true,
           gitsigns = true,
           mini = {
             enabled = true,
@@ -78,6 +83,16 @@ return {
       })
 
       vim.cmd.colorscheme("catppuccin")
+
+      -- fzf-luaと同じく背景を透過させ、エディタ本体との見た目を揃える
+      -- which-key.nvim自体がwinhighlightを内部で固定しており、
+      -- 実際に使われるハイライトグループ側をNormalにリンクし直すことで上書きする
+      -- (WhichKey: キー本体の表示に使われる。catppuccinがNormalFloat=不透明にリンクしているため、
+      --  which-key本来のデフォルト(Function、背景なし)に戻して色分けだけ保つ)
+      vim.api.nvim_set_hl(0, "WhichKey", { link = "Function" })
+      vim.api.nvim_set_hl(0, "WhichKeyNormal", { link = "Normal" })
+      vim.api.nvim_set_hl(0, "WhichKeyBorder", { link = "Normal" })
+      vim.api.nvim_set_hl(0, "WhichKeyTitle", { link = "Normal" })
     end,
   },
   {
