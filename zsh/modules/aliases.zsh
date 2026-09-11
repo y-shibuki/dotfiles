@@ -1,6 +1,5 @@
 # brew
 alias brew-update='brew update && brew upgrade && brew cleanup'
-alias brew-dump='brew bundle dump --force --file="$HOME/.dotfiles/Brewfile"'
 
 # ghq
 alias repo="ghq-cd"
