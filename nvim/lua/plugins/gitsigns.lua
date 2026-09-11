@@ -31,7 +31,6 @@ return {
       current_line_blame_formatter = "<author>, <author_time:%Y-%m-%d> - <summary>",
       sign_priority = 6,
       update_debounce = 100,
-      status_formatter = nil, -- Use default
       max_file_length = 40000, -- Disable if file is longer than this (in lines)
       preview_config = {
         -- Options passed to nvim_open_win
@@ -66,27 +65,10 @@ return {
         end, { desc = "Previous git hunk" })
 
         -- Actions
-        map("n", "<leader>hs", gitsigns.stage_hunk, { desc = "Stage hunk" })
-        map("n", "<leader>hr", gitsigns.reset_hunk, { desc = "Reset hunk" })
-        map("v", "<leader>hs", function()
-          gitsigns.stage_hunk({ vim.fn.line("."), vim.fn.line("v") })
-        end, { desc = "Stage hunk" })
-        map("v", "<leader>hr", function()
-          gitsigns.reset_hunk({ vim.fn.line("."), vim.fn.line("v") })
-        end, { desc = "Reset hunk" })
-        map("n", "<leader>hS", gitsigns.stage_buffer, { desc = "Stage buffer" })
-        map("n", "<leader>hu", gitsigns.undo_stage_hunk, { desc = "Undo stage hunk" })
-        map("n", "<leader>hR", gitsigns.reset_buffer, { desc = "Reset buffer" })
-        map("n", "<leader>hp", gitsigns.preview_hunk, { desc = "Preview hunk" })
-        map("n", "<leader>hb", function()
+        map("n", "<leader>gp", gitsigns.preview_hunk, { desc = "Preview hunk" })
+        map("n", "<leader>gb", function()
           gitsigns.blame_line({ full = true })
         end, { desc = "Blame line" })
-        map("n", "<leader>tb", gitsigns.toggle_current_line_blame, { desc = "Toggle blame line" })
-        map("n", "<leader>hd", gitsigns.diffthis, { desc = "Diff this" })
-        map("n", "<leader>hD", function()
-          gitsigns.diffthis("~")
-        end, { desc = "Diff this ~" })
-        map("n", "<leader>td", gitsigns.toggle_deleted, { desc = "Toggle deleted" })
 
         -- Text object
         map({ "o", "x" }, "ih", ":<C-U>Gitsigns select_hunk<CR>", { desc = "Select hunk" })
