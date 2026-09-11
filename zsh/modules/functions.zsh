@@ -1,6 +1,6 @@
 autoload -U add-zsh-hook
 
-# --- python venv ---
+# --- Python仮想環境の自動有効化 ---
 
 function _auto_activate_venv() {
   local venv_names=("venv" ".venv")
@@ -80,7 +80,7 @@ function ghq-create-new-repository() {
   echo "Repository created at: $repo"
 }
 
-# --- history ---
+# --- 履歴 ---
 
 function select-history() {
   local selected
@@ -129,7 +129,7 @@ function _update_tmux_window_name() {
 add-zsh-hook -d chpwd _update_tmux_window_name
 add-zsh-hook chpwd _update_tmux_window_name
 
-# --- reload ---
+# --- 再読み込み ---
 
 function reload() {
   source ~/.zshrc

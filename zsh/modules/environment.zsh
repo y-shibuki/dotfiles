@@ -7,14 +7,11 @@ export SECOND_BRAIN_VAULT="$HOME/repos/github.com/y-shibuki/second-brain"
 # PATH管理（typeset -U で重複防止）
 typeset -U path PATH
 
+# Homebrewのパスは tools.zsh の _setup_homebrew_env（brew shellenv）が設定する
 path=(
   "$HOME/.local/bin"
   "$HOME/bin"
   "$HOME/go/bin"
-  "/opt/homebrew/bin"
-  "/opt/homebrew/sbin"
-  "/usr/local/bin"
-  "/usr/local/sbin"
   "/usr/bin"
   "/usr/sbin"
   "/bin"

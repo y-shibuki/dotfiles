@@ -104,7 +104,12 @@ return {
         char = "│",
         tab_char = "│",
       },
-      scope = { enabled = false },
+      -- hlchunk.nvimの代替として、現在のコードチャンク(スコープ)をハイライトする
+      scope = {
+        enabled = true,
+        show_start = false,
+        show_end = false,
+      },
       exclude = {
         filetypes = {
           "help",
