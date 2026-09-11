@@ -8,6 +8,8 @@
 set -e
 
 DOTFILES_DIR="$HOME/.dotfiles"
+# 私的オーバーレイ（任意）。存在すれば bin/ と skills/ を同じ場所にリンクする
+DOTFILES_LOCAL="$HOME/.dotfiles.local"
 
 # --- Homebrew ---
 _setup_homebrew_env() {
@@ -58,8 +60,15 @@ fi
 mkdir -p "$HOME/.config"
 mkdir -p "$HOME/.config/tmux"
 mkdir -p "$HOME/.config/claude"
+mkdir -p "$HOME/.local/bin"
 
 # --- Symlinks ---
+# bin
+for script in "$DOTFILES_DIR"/bin/* "$DOTFILES_LOCAL"/bin/*; do
+  [[ -f "$script" ]] || continue
+  ln -fnsv "$script" "$HOME/.local/bin/$(basename "$script")"
+done
+
 # Zsh
 ln -fnsv "$DOTFILES_DIR/zsh/.zshrc" "$HOME/.zshrc"
 ln -fnsv "$DOTFILES_DIR/zsh/starship.toml" "$HOME/.config/starship.toml"
@@ -90,8 +99,17 @@ ln -fnsv "$DOTFILES_DIR/claude/settings.json" "$HOME/.config/claude/settings.jso
 ln -fnsv "$DOTFILES_DIR/claude/commands" "$HOME/.config/claude/commands"
 ln -fnsv "$DOTFILES_DIR/claude/docs" "$HOME/.config/claude/docs"
 ln -fnsv "$DOTFILES_DIR/claude/statusline.sh" "$HOME/.config/claude/statusline.sh"
-ln -fnsv "$DOTFILES_DIR/claude/skills" "$HOME/.config/claude/skills"
+# skills は公開・私的の両方を 1 つのディレクトリに集めるため、スキル単位でリンクする
+if [[ -L "$HOME/.config/claude/skills" ]]; then
+  rm "$HOME/.config/claude/skills"
+fi
+mkdir -p "$HOME/.config/claude/skills"
+for skill in "$DOTFILES_DIR"/claude/skills/*/ "$DOTFILES_LOCAL"/skills/*/; do
+  [[ -d "$skill" ]] || continue
+  ln -fnsv "${skill%/}" "$HOME/.config/claude/skills/$(basename "$skill")"
+done
 ln -fnsv "$DOTFILES_DIR/claude/agents" "$HOME/.config/claude/agents"
+ln -fnsv "$DOTFILES_DIR/claude/hooks" "$HOME/.config/claude/hooks"
 
 # vscode
 if command -v code &> /dev/null; then

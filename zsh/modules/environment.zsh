@@ -2,13 +2,15 @@
 export EDITOR="nvim"
 export VISUAL="$EDITOR"
 export CLAUDE_CONFIG_DIR=$HOME/.config/claude
-export SECOND_BRAIN_VAULT="$HOME/repos/github.com/y-shibuki/second-brain"
+# 私的オーバーレイ（非公開リポジトリのクローン先）。存在すれば bin/ skills/ zsh/ を取り込む
+export DOTFILES_LOCAL="$HOME/.dotfiles.local"
 
 # PATH管理（typeset -U で重複防止）
 typeset -U path PATH
 
 # Homebrewのパスは tools.zsh の _setup_homebrew_env（brew shellenv）が設定する
 path=(
+  "$DOTFILES_LOCAL/bin"(N)
   "$HOME/.local/bin"
   "$HOME/bin"
   "$HOME/go/bin"
