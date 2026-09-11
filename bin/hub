@@ -18,12 +18,12 @@ done
 
 HUB_BIN="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/$(basename "${BASH_SOURCE[0]}")"
 HUB_SESSION="hub"
-HUB_SOCKET="${TMPDIR:-/tmp}/hub-fzf-$(id -u).sock"
+HUB_SOCKET="${HUB_SOCKET:-${TMPDIR:-/tmp}/hub-fzf-$(id -u).sock}"
 HUB_ACTIVITY="${HUB_SOCKET%.sock}.activity"
 HUB_LIST="${HUB_SOCKET%.sock}.list"
 REFRESH_SEC=3
 ACTIVITY_GRACE=2
-# 私的オーバーレイのフック。実行可能ならヘッダーに出力を差し込む
+# ローカル拡張のフック。実行可能ならヘッダーに出力を差し込む
 HUB_STATUS_HOOK="${DOTFILES_LOCAL:-$HOME/.dotfiles.local}/hub-status"
 
 # Catppuccin Mocha
@@ -41,6 +41,13 @@ SKY=$'\033[38;2;137;220;235m'
 TEXT=$'\033[38;2;205;214;244m'
 OVERLAY=$'\033[38;2;108;112;134m'
 TODAY=$'\033[1m\033[48;2;203;166;247m\033[38;2;17;17;27m'
+
+# Nerd Font アイコン（bash 3.2 は \u を解釈しないため UTF-8 バイト列で定義）
+ICON_BELL=$'\xef\x83\xb3'
+ICON_BRANCH=$'\xee\x82\xa0'
+ICON_WORKTREE=$'\xef\x84\xa6'
+ICON_WINDOW=$'\xef\x8b\x90'
+ICON_FOLDER=$'\xef\x81\xbb'
 
 shorten_path() {
   local tilde='~' p
@@ -77,12 +84,31 @@ git_summary() {
   printf '%s\t%s\t%s\t%s' "$branch" "$dirty" "$ahead" "$wt"
 }
 
+# README 用のデモ表示。HUB_DEMO=1 のとき tmux の代わりにダミーデータを使う
+demo_windows() {
+  printf '%s\n' \
+    $'@1\tdotfiles\t1\tfeat/hub-dashboard\t1\t0\t1\tclaude\t~/worktrees/dotfiles/feat-hub-dashboard\tdone\tfeat/hub-dashboard\t2\t1\t1' \
+    $'@2\tdotfiles\t2\tfix/zsh-startup\t0\t0\t1\tclaude\t~/worktrees/dotfiles/fix-zsh-startup\tworking\tfix/zsh-startup\t5\t0\t1' \
+    $'@3\tzoekt-tui\t1\tfeat/regex-search\t1\t0\t0\tclaude\t~/worktrees/zoekt-tui/feat-regex-search\tattention\tfeat/regex-search\t0\t2\t1' \
+    $'@4\tzoekt-tui\t2\tzoekt-tui\t0\t0\t0\tnvim\t~/repos/github.com/y-shibuki/zoekt-tui\t-\tmain\t0\t0\t-' \
+    $'@5\tapi\t1\tfix/rate-limit\t0\t0\t0\tclaude\t~/worktrees/api/fix-rate-limit\tidle\tfix/rate-limit\t3\t0\t1' \
+    $'@6\tdefault\t1\t.dotfiles\t0\t1\t1\tlazygit\t~/.dotfiles\t-\tmain\t0\t0\t-' \
+    $'@7\tdefault\t2\tworkspace\t0\t0\t1\tzsh\t~/workspace\t-\t-\t0\t0\t-'
+}
+
 # 出力: window_id \t path \t 表示列...
 cmd_list() {
   local fmt=$'#{window_id}\t#{session_name}\t#{window_index}\t#{window_name}\t#{window_bell_flag}\t#{window_active}\t#{session_attached}\t#{pane_current_command}\t#{pane_current_path}\t#{@claude_state}'
-  tmux list-windows -a -F "$fmt" 2>/dev/null | sort -t $'\t' -k2,2 -k3,3n |
-  while IFS=$'\t' read -r wid sname widx wname bell active attached cmd path cstate; do
+  local source="tmux list-windows -a -F \"\$fmt\" 2>/dev/null"
+  [[ -n ${HUB_DEMO:-} ]] && source="demo_windows"
+  eval "$source" | sort -t $'\t' -k2,2 -k3,3n |
+  while IFS=$'\t' read -r wid sname widx wname bell active attached cmd path cstate dbranch ddirty dahead dwt; do
     [[ $sname == "$HUB_SESSION" ]] && continue
+    if [[ -n ${HUB_DEMO:-} ]]; then
+      [[ $cstate == - ]] && cstate=""
+      [[ $dbranch == - ]] && dbranch=""
+      [[ $dwt == - ]] && dwt=""
+    fi
 
     local is_claude="" cmd_label cmd_color
     if [[ -n $cstate || $cmd =~ ^[0-9]+\.[0-9]+\.[0-9]+$ || $cmd == claude ]]; then
@@ -105,13 +131,17 @@ cmd_list() {
     fi
 
     local bell_mark="  "
-    [[ $bell == 1 ]] && bell_mark="${RED}${R}"
+    [[ $bell == 1 ]] && bell_mark="${RED}${ICON_BELL}${R} "
 
     local branch="" dirty="" ahead="" wt="" git_col=""
-    IFS=$'\t' read -r branch dirty ahead wt <<< "$(git_summary "$path")"
+    if [[ -n ${HUB_DEMO:-} ]]; then
+      branch=$dbranch; dirty=$ddirty; ahead=$dahead; wt=$dwt
+    else
+      IFS=$'\t' read -r branch dirty ahead wt <<< "$(git_summary "$path")"
+    fi
     if [[ -n $branch ]]; then
-      local bicon=""
-      [[ -n $wt ]] && bicon=""
+      local bicon=$ICON_BRANCH
+      [[ -n $wt ]] && bicon=$ICON_WORKTREE
       git_col="${MAUVE}${bicon} $(pad 22 "$branch")${R} "
       local st=""
       [[ ${dirty:-0} -gt 0 ]] && st+="${YELLOW}●${dirty}${R} "
@@ -135,12 +165,38 @@ cmd_list() {
   done
 }
 
+demo_preview() {
+  printf '%s%s %s%s › %s%s%s   %s%s%s\n\n' "$OVERLAY" "$ICON_WINDOW" "$R" "${MAUVE}dotfiles" "feat/hub-dashboard" "$R" "$ICON_FOLDER" "$DIM" "~/worktrees/dotfiles/feat-hub-dashboard" "$R"
+  printf '%s── screen ──%s\n' "$OVERLAY" "$R"
+  cat <<'EOT'
+● bin/hub に reload-sync と操作中の差し替え保留を実装しました。
+  カーソル操作中は一覧を更新せず、手が止まってから反映されます。
+
+  変更点:
+  - refresh_loop: 一覧のハッシュ比較で変化があるときだけ送信
+  - focus / change イベントで最終操作時刻を記録
+
+◆ Cogitated for 12s · done 14:31
+
+❯
+EOT
+  printf '\n%s── git ──%s\n' "$OVERLAY" "$R"
+  printf ' \033[32mM\033[0m bin/hub\n \033[32mA\033[0m docs/hub.png\n'
+  printf '\033[33ma1b2c3d\033[0m \033[33m(\033[1;36mHEAD -> \033[1;32mfeat/hub-dashboard\033[33m)\033[0m feat: 変化があったときだけ一覧を差し替える\n'
+  printf '\033[33m9f8e7d6\033[0m feat: hub に fzf 常駐ダッシュボードを追加する\n'
+  printf '\033[33m69a2594\033[0m \033[33m(\033[1;31morigin/main\033[33m, \033[1;32mmain\033[33m)\033[0m Merge pull request #3 from y-shibuki/feat/nvim-git-ux-and-plugins\n'
+}
+
 cmd_preview() {
   local wid=$1
   [[ -n $wid ]] || return
+  if [[ -n ${HUB_DEMO:-} ]]; then
+    demo_preview
+    return
+  fi
   local path cmd sname wname
   IFS=$'\t' read -r path cmd sname wname < <(tmux display-message -p -t "$wid" $'#{pane_current_path}\t#{pane_current_command}\t#{session_name}\t#{window_name}' 2>/dev/null)
-  printf '%s%s %s%s › %s%s%s   %s%s%s\n\n' "$OVERLAY" "" "$R" "${MAUVE}${sname}" "$wname" "$R" "" "$DIM" "$(shorten_path "$path")" "$R"
+  printf '%s%s %s%s › %s%s%s   %s%s%s\n\n' "$OVERLAY" "$ICON_WINDOW" "$R" "${MAUVE}${sname}" "$wname" "$R" "$ICON_FOLDER" "$DIM" "$(shorten_path "$path")" "$R"
 
   printf '%s── screen ──%s\n' "$OVERLAY" "$R"
   tmux capture-pane -p -t "$wid" -S -60 2>/dev/null | sed -e 's/[[:space:]]*$//' | grep -v '^$' | tail -14
@@ -168,16 +224,16 @@ cmd_header() {
   else
     printf '%s%s%s  %s(cal が無いため省略: apt install ncal)%s\n' "$MAUVE$BOLD" "$(date '+%B %Y')" "$R" "$OVERLAY" "$R"
   fi
-  if [[ -x $HUB_STATUS_HOOK ]]; then
+  if [[ -z ${HUB_DEMO:-} && -x $HUB_STATUS_HOOK ]]; then
     printf '\n'
     "$HUB_STATUS_HOOK" 2>/dev/null
   fi
   local notes_key=""
-  command -v notes >/dev/null && notes_key="${PEACH}^b${OVERLAY} notes  "
+  [[ -z ${HUB_DEMO:-} ]] && command -v notes >/dev/null && notes_key="${PEACH}^b${OVERLAY} notes  "
   printf '\n%s enter%s jump  %s^n%s new task  %s%s^o%s lazygit  %s^x%s kill  %s^r%s reload%s\n' \
     "$PEACH" "$OVERLAY" "$PEACH" "$OVERLAY" "$notes_key" "$PEACH" "$OVERLAY" "$PEACH" "$OVERLAY" "$PEACH" "$OVERLAY" "$R"
   printf '\n%s%s%s%s%s%spath%s\n' \
-    "$OVERLAY$BOLD" "$(pad 11 session)" "$(pad 29 window)" "$(pad 17 command)" "$(pad 23 branch)" "$(pad 10 status)" "$R"
+    "$OVERLAY$BOLD" "$(pad 11 session)" "$(pad 29 window)" "$(pad 18 command)" "$(pad 23 branch)" "$(pad 10 status)" "$R"
 }
 
 fzf_common() {
@@ -186,7 +242,7 @@ fzf_common() {
     --border-label="$(cmd_label)" \
     --delimiter=$'\t' --with-nth=3.. --nth=3.. \
     --header="$(cmd_header)" \
-    --prompt='  ' --pointer='▌' --info=inline-right --no-scrollbar \
+    --prompt='  ' --pointer='▌' --info=hidden --no-separator --no-scrollbar \
     --preview="$HUB_BIN preview {1}" --preview-window=down,50%,border-top,nowrap \
     --bind "ctrl-o:execute(tmux display-popup -E -d {2} -w 90% -h 90% lazygit)" \
     --bind "ctrl-r:reload($HUB_BIN list)" \
