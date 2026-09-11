@@ -8,7 +8,7 @@
 set -e
 
 DOTFILES_DIR="$HOME/.dotfiles"
-# 私的オーバーレイ（任意）。存在すれば bin/ と skills/ を同じ場所にリンクする
+# ローカル拡張（任意）。~/.dotfiles.local があれば bin/ と skills/ を同じ場所にリンクする
 DOTFILES_LOCAL="$HOME/.dotfiles.local"
 
 # --- Homebrew ---
