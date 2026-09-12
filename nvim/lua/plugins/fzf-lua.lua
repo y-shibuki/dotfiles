@@ -4,6 +4,22 @@ return {
   ---@type fzf-lua.Config|{}
   ---@diagnostics disable: missing-fields
   dependencies = { "nvim-mini/mini.icons" },
+  cmd = "FzfLua",
+  keys = {
+    { "<leader>fq", desc = "󰈞 Ghq Repos (new tab)" },
+    { "<leader>ff", desc = "󰈞 Find Files" },
+    { "<leader>fg", desc = "󰈞 Live Grep" },
+    { "<leader>fb", desc = "󰈞 Find Buffers" },
+    { "<leader>fh", desc = "󰈞 Help Tags" },
+    { "<leader>gc", desc = "󰈞 Git Commits" },
+    { "<leader>gs", desc = "󰈞 Git Status" },
+    { "<leader>fr", desc = "󰈞 Recent Files" },
+    { "<leader>fw", desc = "󰈞 Grep Word" },
+    { "<leader>fW", desc = "󰈞 Grep WORD" },
+    { "<leader>fw", mode = "v", desc = "󰈞 Grep Selection" },
+    { "<leader>fk", desc = "󰈞 Keymaps" },
+    { "<leader>fC", desc = "󰈞 Commands" },
+  },
   config = function()
     local fzf_lua = require("fzf-lua")
 
