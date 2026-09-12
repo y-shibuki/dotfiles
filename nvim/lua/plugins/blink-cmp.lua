@@ -2,7 +2,7 @@ return {
   "saghen/blink.cmp",
   lazy = false, -- lazy loading handled internally
   -- use a release tag to download pre-built binaries
-  version = "v0.*",
+  version = "1.*",
   opts = {
     keymap = {
       preset = "enter",
