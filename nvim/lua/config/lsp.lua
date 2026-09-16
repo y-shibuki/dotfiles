@@ -1,4 +1,12 @@
 -- LSP configuration
+vim.lsp.config('gopls', {
+  settings = {
+    gopls = {
+      gofumpt = true,
+    },
+  },
+})
+
 vim.lsp.enable({
   'pyright',      -- Python
   'jdtls',        -- Java
