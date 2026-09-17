@@ -7,6 +7,7 @@ local ensure_installed = {
   "gomod",
   "gowork",
   "hcl",
+  "java",
   "javascript",
   "json",
   "lua",

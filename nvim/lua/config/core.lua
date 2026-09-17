@@ -93,8 +93,6 @@ opt.completeopt = 'menu,menuone,noselect'
 opt.updatetime = 50
 -- 構文ハイライトの同期を取る行数を制限（大きなファイルでのパフォーマンス向上）
 opt.synmaxcol = 300
--- 画面再描画を遅延させない
-opt.lazyredraw = false
 
 -- ========== その他の便利設定 ==========
 -- マウスサポート
