@@ -153,14 +153,6 @@ return {
           highlight_grey = "LineNr",
         },
       })
-
-      -- Integration with blink.cmp
-      local blink_cmp = require("blink.cmp")
-      if blink_cmp then
-        blink_cmp.on_confirm_done = function()
-          require("nvim-autopairs").autopairs_cr()
-        end
-      end
     end,
   },
 }
